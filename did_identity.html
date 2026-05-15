@@ -28,11 +28,12 @@
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>去中心化DID身份（永久固定）</h3></div>
+            <div class="card-header"><h3>DID身份（生成后永久固定）</h3></div>
             <div class="card-body">
-                <button class="btn-primary" onclick="createDID()" id="createBtn">生成DID身份（仅生成一次）</button>
+                <!-- 生成后自动灰化，永远点不动 -->
+                <button class="btn-primary" onclick="createDID()" id="createBtn">生成DID身份</button>
                 <div id="didResult" class="result"></div>
-                <p style="color:#666;margin-top:10px;">⚠️ 仅允许生成一次，生成后DID永久固定，不可修改！</p>
+                <p style="color:#999;margin-top:12px;font-size:12px;">⚠️ 仅可生成1次，生成后按钮锁定，DID永久不变</p>
             </div>
         </div>
     </main>
@@ -41,45 +42,59 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             await verifyToken();
-            // 加载时检查：如果已有DID，直接显示，禁用按钮
-            const localDID = localStorage.getItem("MY_ONLY_DID");
-            if (localDID) {
+            
+            // 页面加载：如果已有DID，直接锁定按钮
+            const saved_did = localStorage.getItem("MY_FIXED_DID");
+            if(saved_did){
+                document.getElementById("didResult").innerText = "✅ 已固定DID：\n" + saved_did;
                 document.getElementById("didResult").className = "result alert-success";
-                document.getElementById("didResult").innerText = "✅ 你的固定DID：\n" + localDID;
-                document.getElementById("createBtn").disabled = true;
-                document.getElementById("createBtn").innerText = "DID已固定（不可重复生成）";
+                
+                // 永久禁用按钮 + 变灰
+                let btn = document.getElementById("createBtn");
+                btn.disabled = true;
+                btn.style.opacity = "0.5";
+                btn.style.cursor = "not-allowed";
+                btn.innerText = "DID已锁定（不可修改）";
             }
         });
 
+        // 生成DID（仅1次机会）
         async function createDID() {
-            const btn = document.getElementById("createBtn");
-            const dom = document.getElementById("didResult");
+            let btn = document.getElementById("createBtn");
+            let result_box = document.getElementById("didResult");
 
+            // 生成前直接锁定，防止重复点击
             btn.disabled = true;
+            btn.style.opacity = "0.5";
+            btn.style.cursor = "not-allowed";
             btn.innerText = "生成中...";
-            dom.innerText = "";
 
             try {
-                const data = await httpPost("/api/did/generate", { user_id: 1 });
-                if (data.code === 200) {
-                    const did = data.data.did;
-                    // ✅ 永久保存DID，禁止再次生成
-                    localStorage.setItem("MY_ONLY_DID", did);
-                    
-                    dom.className = "result alert-success";
-                    dom.innerText = `✅ DID已永久固定：\n${did}\n\n⚠️ 请勿再次生成！`;
-                    // 生成后永久禁用按钮
-                    btn.disabled = true;
-                    btn.innerText = "DID已固定（不可修改）";
-                } else {
-                    dom.className = "result alert-danger";
-                    dom.innerText = data.msg || "生成失败";
+                const res = await httpPost("/api/did/generate", { user_id: 1 });
+                if(res.code === 200){
+                    const did = res.data.did;
+                    // 永久保存DID
+                    localStorage.setItem("MY_FIXED_DID", did);
+
+                    result_box.className = "result alert-success";
+                    result_box.innerText = "✅ DID已永久锁定：\n" + did + "\n\n⚠️ 私钥无需保存，不影响任何存证！";
+                }else{
+                    result_box.className = "result alert-danger";
+                    result_box.innerText = "生成失败";
+                    // 失败解锁按钮
                     btn.disabled = false;
+                    btn.style.opacity = "1";
+                    btn.style.cursor = "pointer";
+                    btn.innerText = "生成DID身份";
                 }
             } catch (error) {
-                dom.className = "result alert-danger";
-                dom.innerText = "网络异常";
+                result_box.className = "result alert-danger";
+                result_box.innerText = "网络异常，请重试";
+                // 失败解锁按钮
                 btn.disabled = false;
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+                btn.innerText = "生成DID身份";
             }
         }
     </script>
