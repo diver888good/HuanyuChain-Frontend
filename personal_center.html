@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 寰域链 V8.0</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .personal-box {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #0066cc;
+        }
+        .hash-text {
+            color: #0066cc;
+            font-weight: bold;
+            word-break: break-all;
+            margin: 8px 0;
+        }
+        .copy-btn {
+            background: #0066cc;
+            color: #fff;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .cert-item {
+            background: #fff;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1 class="logo">寰域链 V8.0</h1>
+            <button class="menu-toggle">☰</button>
+            <nav>
+                <a href="index.html">首页存证</a>
+                <a href="dashboard.html">管理面板</a>
+                <a href="personal_center.html" class="active">个人中心</a>
+                <a href="did_identity.html">DID身份</a>
+                <a href="video_cert.html">视频存证</a>
+                <a href="federated_privacy.html">隐私计算</a>
+                <a href="metaverse_asset.html">元宇宙NFT</a>
+                <a href="gov_dashboard.html">政务中台</a>
+            </nav>
+        </div>
+    </header>
+    <main class="container">
+        <!-- 我的身份信息（DID+密钥，保留用于未来签字功能） -->
+        <div class="card">
+            <div class="card-header"><h3>🔑 我的身份信息</h3></div>
+            <div class="card-body">
+                <div class="personal-box">
+                    <p><strong>我的DID：</strong></p>
+                    <p class="hash-text" id="myDid">未生成</p>
+                    
+                    <p><strong>电子签字密钥（未来扩展用）：</strong></p>
+                    <p class="hash-text" id="myKey">未生成</p>
+                    <button class="copy-btn" onclick="copyKey()">复制密钥</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 我的存证记录（查询字符串永久保存） -->
+        <div class="card" style="margin-top:20px;">
+            <div class="card-header"><h3>📄 我的存证记录（查询串）</h3></div>
+            <div class="card-body" id="certList">暂无存证记录</div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await verifyToken();
+            loadPersonalInfo();
+            loadCertRecords();
+        });
+
+        // 加载DID+密钥
+        function loadPersonalInfo() {
+            const info = JSON.parse(localStorage.getItem("MY_DID_INFO") || "{}");
+            document.getElementById("myDid").innerText = info.did || "未生成DID";
+            document.getElementById("myKey").innerText = info.private_key || "未生成密钥";
+        }
+
+        // 复制密钥（未来功能用）
+        function copyKey() {
+            const info = JSON.parse(localStorage.getItem("MY_DID_INFO"));
+            if (info?.private_key) {
+                navigator.clipboard.writeText(info.private_key);
+                alert("密钥复制成功！");
+            }
+        }
+
+        // 加载所有存证记录
+        function loadCertRecords() {
+            const list = document.getElementById("certList");
+            const records = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
+
+            if (records.length === 0) {
+                list.innerHTML = "暂无存证记录";
+                return;
+            }
+
+            let html = "";
+            records.forEach(item => {
+                html += `
+                <div class="cert-item">
+                    <p>类型：${item.type}</p>
+                    <p>时间：${item.time}</p>
+                    <p><b>查询字符串：</b></p>
+                    <p class="hash-text">${item.hash}</p>
+                    <button class="copy-btn" onclick="copyHash('${item.hash}')">复制查询串</button>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        // 复制查询字符串
+        function copyHash(hash) {
+            navigator.clipboard.writeText(hash);
+            alert("复制成功！去首页验证即可~");
+        }
+    </script>
+</body>
+</html>
