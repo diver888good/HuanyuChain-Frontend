@@ -14,6 +14,8 @@
             <nav>
                 <a href="index.html">首页存证</a>
                 <a href="dashboard.html">管理面板</a>
+                <!-- 🔥 新增：个人中心入口 -->
+                <a href="personal_center.html">个人中心</a>
                 <a href="did_identity.html">DID身份</a>
                 <a href="video_cert.html" class="active">视频存证</a>
                 <a href="federated_privacy.html">隐私计算</a>
@@ -33,7 +35,6 @@
                 <input type="file" id="videoFile" accept="video/*">
                 <button class="btn-primary" onclick="makeVideoHash()" id="hashBtn">生成视频哈希</button>
 
-                <!-- 自动填充固定DID，只读不可改 -->
                 <input id="videoDid" readonly placeholder="自动读取固定DID">
                 <input id="videoHash" readonly placeholder="自动生成视频哈希">
 
@@ -47,16 +48,16 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             await verifyToken();
-            // 自动读取固定DID
-            const did = localStorage.getItem("MY_FIXED_DID");
-            if(did){
-                document.getElementById("videoDid").value = did;
+            // 🔥 修复：读取新的DID存储格式（包含密钥，支持未来扩展）
+            const saved_info = JSON.parse(localStorage.getItem("MY_DID_INFO") || "{}");
+            if(saved_info.did){
+                document.getElementById("videoDid").value = saved_info.did;
             }else{
                 alert("请先去 DID身份 页面生成固定DID！");
             }
         });
 
-        // 生成视频哈希（不变）
+        // 生成视频哈希（原样保留，无修改）
         function makeVideoHash() {
             const file = document.getElementById("videoFile").files[0];
             if (!file) {
@@ -81,7 +82,7 @@
             };
         }
 
-        // 🔥 核心修复：调用你真实的后端接口 /api/video/cert
+        // 提交存证 + 自动保存记录到个人中心
         async function videoCertSubmit() {
             const btn = document.getElementById("videoBtn");
             const dom = document.getElementById("videoResult");
@@ -99,20 +100,29 @@
             dom.innerText = "";
 
             try {
-                // ✅ 适配你的Flask后端：/api/video/cert
                 const data = await httpPost("/api/video/cert", {
                     did: did,
                     video_hash: hash
                 });
                 
                 if (data.code === 200) {
+                    // 🔥 核心：存证记录同步到个人中心
+                    const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
+                    certRecords.unshift({
+                        type: "视频存证",
+                        hash: data.data.video_hash,
+                        record_id: data.data.record_id,
+                        time: new Date().toLocaleString()
+                    });
+                    localStorage.setItem("MY_CERTS", JSON.stringify(certRecords));
+
+                    // 显示结果（原样保留）
                     dom.className = "result alert-success";
-                    // ✅ 显示你要的：区块数+存证ID+查询数字串
                     dom.innerText = `✅ 视频存证成功（已上链）
 📝 存证ID：${data.data.record_id}
 🔍 查询数字串：${data.data.video_hash}
 ⛓️ 区块高度：3
-⚠️ 复制【查询数字串】去首页即可验证！`;
+⚠️ 记录已保存至【个人中心】，可随时复制查询！`;
                 } else {
                     dom.className = "result alert-danger";
                     dom.innerText = data.msg || "存证失败";
