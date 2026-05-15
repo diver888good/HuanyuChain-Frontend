@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理面板</title>
+    <title>管理面板 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,20 +20,49 @@
                 <a href="metaverse_asset.html">元宇宙NFT</a>
                 <a href="gov_dashboard.html">政务中台</a>
             </nav>
-            <div id="userInfo" style="display: none;"><span id="username"></span><button id="logoutBtn" class="btn-secondary">退出</button></div>
+            <div id="userInfo" style="display: none;">
+                <span id="username"></span>
+                <button id="logoutBtn" class="btn-secondary">退出</button>
+            </div>
         </div>
     </header>
     <main class="container">
-        <div class="card"><div class="card-header"><h3>系统统计</h3></div><div class="card-body" id="statsBox">加载中...</div></div>
+        <div class="card">
+            <div class="card-header"><h3>系统统计</h3></div>
+            <div class="card-body" id="statsBox">加载中...</div>
+        </div>
     </main>
+
     <script src="app.js"></script>
     <script>
-        window.onload = async ()=>{await verifyToken();loadStats();}
-        async function loadStats(){
-            const data = await httpGet("/api/monitor/stats");
-            if(data.code===200){
-                const d=data.data;
-                document.getElementById("statsBox").innerHTML=`<p>区块高度：${d.chain_height}</p><p>存证数：${d.total_cert}</p><p>用户数：${d.total_user}</p>`;
+        // 等待DOM完全加载 + 登录校验
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 校验登录状态
+            const isLogin = await verifyToken();
+            if (isLogin) {
+                loadStats();
+            }
+        });
+
+        // 加载系统统计数据
+        async function loadStats() {
+            try {
+                const data = await httpGet("/api/monitor/stats");
+                const statsBox = document.getElementById("statsBox");
+                
+                if (data.code === 200) {
+                    const d = data.data;
+                    statsBox.innerHTML = `
+                        <p>📦 区块高度：${d.chain_height || 0}</p>
+                        <p>📄 总存证数：${d.total_cert || 0}</p>
+                        <p>👤 总用户数：${d.total_user || 0}</p>
+                    `;
+                } else {
+                    statsBox.innerHTML = `<p style="color:red;">${data.msg || '数据加载失败'}</p>`;
+                }
+            } catch (error) {
+                document.getElementById("statsBox").innerHTML = `<p style="color:red;">网络异常，获取统计数据失败</p>`;
+                console.error(error);
             }
         }
     </script>
