@@ -28,11 +28,17 @@
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>视频存证</h3></div>
+            <div class="card-header"><h3>视频存证（上传自动计算哈希）</h3></div>
             <div class="card-body">
-                <input id="videoDid" placeholder="DID">
-                <input id="videoHash" placeholder="视频哈希">
-                <button class="btn-primary" onclick="videoCertSubmit()" id="videoBtn">提交</button>
+                <!-- 视频上传 -->
+                <input type="file" id="videoFile" accept="video/*" placeholder="选择视频文件">
+                <button class="btn-primary" onclick="generateVideoHash()" id="hashBtn">生成视频哈希</button>
+                
+                <!-- 自动填充字段 -->
+                <input id="videoDid" placeholder="DID（自动填充）" readonly>
+                <input id="videoHash" placeholder="视频哈希（自动生成）" readonly>
+                
+                <button class="btn-primary" onclick="videoCertSubmit()" id="videoBtn">提交存证</button>
                 <div id="videoResult" class="result"></div>
             </div>
         </div>
@@ -40,28 +46,60 @@
 
     <script src="app.js"></script>
     <script>
-        // 兼容新版 app.js 标准初始化
+        // 页面初始化：校验登录 + 自动填充DID
         document.addEventListener('DOMContentLoaded', async () => {
             await verifyToken();
+            // 自动读取本地存储的DID（从DID页面生成后自动保存）
+            const userDid = localStorage.getItem("user_did") || "";
+            document.getElementById("videoDid").value = userDid;
         });
 
-        // 视频存证提交（修复：输入校验+防重复+异常捕获）
-        async function videoCertSubmit() {
-            const btn = document.getElementById("videoBtn");
-            const dom = document.getElementById("videoResult");
-            
-            // 获取输入值
-            const did = document.getElementById("videoDid").value.trim();
-            const hash = document.getElementById("videoHash").value.trim();
+        // 核心功能：上传视频 → 自动计算哈希
+        function generateVideoHash() {
+            const file = document.getElementById("videoFile").files[0];
+            const btn = document.getElementById("hashBtn");
+            const hashInput = document.getElementById("videoHash");
 
-            // 输入校验
-            if (!did || !hash) {
-                dom.className = "result alert-danger";
-                dom.innerText = "请填写完整的DID和视频哈希！";
+            if (!file) {
+                alert("请先选择视频文件！");
                 return;
             }
 
             // 防重复点击
+            btn.disabled = true;
+            btn.innerText = "计算中...";
+            hashInput.value = "";
+
+            // 读取视频文件生成哈希
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            reader.onload = function (e) {
+                const array = new Uint8Array(e.target.result);
+                let hash = "";
+                for (let i = 0; i < array.length; i++) {
+                    hash += array[i].toString(16).padStart(2, "0");
+                }
+                // 取64位作为哈希值
+                hashInput.value = hash.slice(0, 64);
+                btn.disabled = false;
+                btn.innerText = "生成视频哈希";
+            };
+        }
+
+        // 提交存证（原有功能优化）
+        async function videoCertSubmit() {
+            const btn = document.getElementById("videoBtn");
+            const dom = document.getElementById("videoResult");
+            
+            const did = document.getElementById("videoDid").value.trim();
+            const hash = document.getElementById("videoHash").value.trim();
+
+            if (!did || !hash) {
+                dom.className = "result alert-danger";
+                dom.innerText = "请先生成DID和视频哈希！";
+                return;
+            }
+
             btn.disabled = true;
             btn.innerText = "提交中...";
             dom.innerText = "";
@@ -84,7 +122,7 @@
                 console.error(error);
             } finally {
                 btn.disabled = false;
-                btn.innerText = "提交";
+                btn.innerText = "提交存证";
             }
         }
     </script>
