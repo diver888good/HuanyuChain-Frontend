@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DID身份</title>
+    <title>DID身份 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,20 +20,62 @@
                 <a href="metaverse_asset.html">元宇宙NFT</a>
                 <a href="gov_dashboard.html">政务中台</a>
             </nav>
-            <div id="userInfo" style="display: none;"><span id="username"></span><button id="logoutBtn" class="btn-secondary">退出</button></div>
+            <div id="userInfo" style="display: none;">
+                <span id="username"></span>
+                <button id="logoutBtn" class="btn-secondary">退出</button>
+            </div>
         </div>
     </header>
     <main class="container">
-        <div class="card"><div class="card-header"><h3>生成DID</h3></div><div class="card-body"><button class="btn-primary" onclick="createDID()">生成</button><div id="didResult" class="result"></div></div></div>
+        <div class="card">
+            <div class="card-header"><h3>去中心化DID身份生成</h3></div>
+            <div class="card-body">
+                <button class="btn-primary" onclick="createDID()" id="createBtn">生成DID身份</button>
+                <div id="didResult" class="result"></div>
+            </div>
+        </div>
     </main>
+
     <script src="app.js"></script>
     <script>
-        window.onload = async ()=>{await verifyToken();}
-        async function createDID(){
-            const data = await httpPost("/api/did/generate",{user_id:1});
+        // 标准初始化，兼容新版 app.js
+        document.addEventListener('DOMContentLoaded', async () => {
+            await verifyToken();
+        });
+
+        // 生成DID（修复重复点击 + 异常捕获）
+        async function createDID() {
+            const btn = document.getElementById("createBtn");
             const dom = document.getElementById("didResult");
-            if(data.code===200){dom.className="result alert-success";dom.innerText=`DID：${data.data.did}\n私钥：${data.data.private_key}`;}
-            else{dom.className="result alert-danger";dom.innerText=data.msg;}
+            
+            // 防重复点击
+            btn.disabled = true;
+            btn.innerText = "生成中...";
+            dom.innerText = "";
+
+            try {
+                // 调用后端接口
+                const data = await httpPost("/api/did/generate", { user_id: 1 });
+                
+                if (data.code === 200) {
+                    // 生成成功
+                    dom.className = "result alert-success";
+                    dom.innerText = `✅ DID身份：${data.data.did}\n🔑 私钥（请妥善保存）：${data.data.private_key}`;
+                } else {
+                    // 业务失败
+                    dom.className = "result alert-danger";
+                    dom.innerText = data.msg || "DID生成失败";
+                }
+            } catch (error) {
+                // 网络异常
+                dom.className = "result alert-danger";
+                dom.innerText = "网络异常，请重试";
+                console.error(error);
+            } finally {
+                // 恢复按钮
+                btn.disabled = false;
+                btn.innerText = "生成DID身份";
+            }
         }
     </script>
 </body>
