@@ -28,15 +28,14 @@
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>视频存证（真·上链版）</h3></div>
+            <div class="card-header"><h3>视频存证（自动上链）</h3></div>
             <div class="card-body">
-                <!-- 选择视频 -->
                 <input type="file" id="videoFile" accept="video/*">
                 <button class="btn-primary" onclick="makeVideoHash()" id="hashBtn">生成视频哈希</button>
 
-                <!-- ✅ 自动填充固定DID，无需手动粘贴 -->
-                <input id="videoDid" placeholder="自动加载你的固定DID" readonly>
-                <input id="videoHash" placeholder="自动生成视频哈希" readonly>
+                <!-- 自动填充固定DID，只读不可改 -->
+                <input id="videoDid" readonly placeholder="自动读取固定DID">
+                <input id="videoHash" readonly placeholder="自动生成视频哈希">
 
                 <button class="btn-primary" onclick="videoCertSubmit()" id="videoBtn">提交存证</button>
                 <div id="videoResult" class="result"></div>
@@ -48,16 +47,16 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             await verifyToken();
-            // ✅ 自动读取本地固定DID，永远不变
-            const fixedDid = localStorage.getItem("MY_ONLY_DID");
-            if (fixedDid) {
-                document.getElementById("videoDid").value = fixedDid;
-            } else {
-                alert("请先去【DID身份】页面生成一次固定DID！");
+            // 自动读取固定DID
+            const did = localStorage.getItem("MY_FIXED_DID");
+            if(did){
+                document.getElementById("videoDid").value = did;
+            }else{
+                alert("请先去 DID身份 页面生成固定DID！");
             }
         });
 
-        // 选视频自动生成哈希（不变）
+        // 生成视频哈希
         function makeVideoHash() {
             const file = document.getElementById("videoFile").files[0];
             if (!file) {
@@ -82,7 +81,7 @@
             };
         }
 
-        // 提交存证（区块链接口，验证可查）
+        // 提交到区块链（验证可查）
         async function videoCertSubmit() {
             const btn = document.getElementById("videoBtn");
             const dom = document.getElementById("videoResult");
@@ -100,13 +99,11 @@
             dom.innerText = "";
 
             try {
-                // ✅ 区块链官方接口，验证必查得到
                 const data = await httpPost("/api/chain/certify", {
                     file_hash: hash,
                     metadata: {
                         type: "视频存证",
-                        did: did,
-                        remark: "视频文件上链存证"
+                        did: did
                     }
                 });
                 if (data.code === 200) {
