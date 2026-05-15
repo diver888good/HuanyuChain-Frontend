@@ -2,41 +2,67 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>寰域链 - 注册</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寰域链 - 用户注册</title>
+    <!-- 复用全站统一样式，保持风格一致 -->
+    <link rel="stylesheet" href="style.css">
     <style>
-        * {margin: 0; padding: 0; box-sizing: border-box; font-family: Arial;}
-        body {background: #f5f5f5; display: flex; justify-content: center; align-items: center; height: 100vh;}
-        .box {width: 360px; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 2px 10px #00000010;}
-        h2 {text-align: center; margin-bottom: 25px; color: #333;}
-        input {width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #eee; border-radius: 6px; font-size: 14px;}
-        button {width: 100%; padding: 12px; background: #2d8cf0; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; margin-top: 10px;}
-        .tips {text-align: center; margin-top: 15px; font-size: 13px;}
-        a {color: #2d8cf0; text-decoration: none;}
+        /* 注册页专属居中样式，不冲突全局 */
+        .register-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 60px);
+            padding: 1rem;
+        }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>用户注册</h2>
-        <input type="text" id="username" placeholder="请输入用户名">
-        <input type="password" id="password" placeholder="请输入密码">
-        <button id="registerBtn">立即注册</button>
-        <div class="tips">已有账号？<a href="index.html">返回登录</a></div>
-    </div>
+    <!-- 统一头部导航（和全站保持一致） -->
+    <header>
+        <div class="header-container">
+            <h1 class="logo">寰域链 V8.0</h1>
+            <button class="menu-toggle">☰</button>
+            <nav>
+                <a href="index.html">返回登录</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container register-container">
+        <div class="card" style="width: 100%; max-width: 400px;">
+            <div class="card-header">
+                <h3>用户注册</h3>
+            </div>
+            <div class="card-body">
+                <input type="text" id="username" placeholder="请输入用户名">
+                <input type="password" id="password" placeholder="请输入密码">
+                <button class="btn-primary" id="registerBtn" style="width: 100%;">立即注册</button>
+                <div class="tips" style="text-align: center; margin-top: 1rem; font-size: 0.9rem;">
+                    已有账号？<a href="index.html" style="color: #2563eb;">返回登录</a>
+                </div>
+            </div>
+        </div>
+    </main>
 
 <script>
-// 直接绑定事件，无任何依赖，按钮必响应
+// 独立绑定事件，无依赖，按钮100%响应
 document.getElementById('registerBtn').onclick = async function() {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-    // 非空校验
-    if(!username || !password){
-        alert('请填写完整信息！');
+    // 输入校验
+    if (!username || !password) {
+        alert("请填写完整信息！");
         return;
     }
 
+    // 按钮禁用，防重复注册
+    this.disabled = true;
+    this.innerText = "注册中...";
+
     try {
-        // 直接请求后端注册接口（精准匹配）
+        // 后端注册接口（精准匹配）
         const res = await fetch("https://huanyuchain.pythonanywhere.com/api/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -44,17 +70,30 @@ document.getElementById('registerBtn').onclick = async function() {
         });
         const result = await res.json();
 
-        if(result.code === 200){
-            alert('注册成功！请登录');
-            location.href = 'index.html';
-        }else{
-            alert(result.msg);
+        if (result.code === 200) {
+            alert("注册成功！请登录");
+            location.href = "index.html";
+        } else {
+            alert(result.msg || "注册失败");
         }
     } catch (error) {
-        alert('网络异常，请刷新重试');
-        console.log(error);
+        alert("网络异常，请刷新重试");
+        console.error(error);
+    } finally {
+        // 恢复按钮
+        this.disabled = false;
+        this.innerText = "立即注册";
     }
 }
+
+// 移动端菜单适配
+document.addEventListener("DOMContentLoaded", function () {
+    const toggle = document.querySelector(".menu-toggle");
+    const nav = document.querySelector("nav");
+    if (toggle) {
+        toggle.addEventListener("click", () => nav.classList.toggle("active"));
+    }
+});
 </script>
 </body>
 </html>
