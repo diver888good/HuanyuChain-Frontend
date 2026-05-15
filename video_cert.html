@@ -34,8 +34,8 @@
                 <input type="file" id="videoFile" accept="video/*">
                 <button class="btn-primary" onclick="makeVideoHash()" id="hashBtn">生成视频哈希</button>
 
-                <!-- 手动填DID + 自动填哈希 -->
-                <input id="videoDid" placeholder="手动粘贴你的DID">
+                <!-- ✅ 自动填充固定DID，无需手动粘贴 -->
+                <input id="videoDid" placeholder="自动加载你的固定DID" readonly>
                 <input id="videoHash" placeholder="自动生成视频哈希" readonly>
 
                 <button class="btn-primary" onclick="videoCertSubmit()" id="videoBtn">提交存证</button>
@@ -48,9 +48,16 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             await verifyToken();
+            // ✅ 自动读取本地固定DID，永远不变
+            const fixedDid = localStorage.getItem("MY_ONLY_DID");
+            if (fixedDid) {
+                document.getElementById("videoDid").value = fixedDid;
+            } else {
+                alert("请先去【DID身份】页面生成一次固定DID！");
+            }
         });
 
-        // 选视频自动生成哈希
+        // 选视频自动生成哈希（不变）
         function makeVideoHash() {
             const file = document.getElementById("videoFile").files[0];
             if (!file) {
@@ -69,14 +76,13 @@
                 for (let i = 0; i < arr.length; i++) {
                     hash += arr[i].toString(16).padStart(2, "0");
                 }
-                // 截取64位哈希
                 document.getElementById("videoHash").value = hash.slice(0, 64);
                 btn.disabled = false;
                 btn.innerText = "生成视频哈希";
             };
         }
 
-        // 提交存证 → 【关键修改】调用真上链接口！
+        // 提交存证（区块链接口，验证可查）
         async function videoCertSubmit() {
             const btn = document.getElementById("videoBtn");
             const dom = document.getElementById("videoResult");
@@ -85,7 +91,7 @@
 
             if (!did || !hash) {
                 dom.className = "result alert-danger";
-                dom.innerText = "请填写DID，并生成视频哈希";
+                dom.innerText = "请先生成DID和视频哈希";
                 return;
             }
 
@@ -94,10 +100,10 @@
             dom.innerText = "";
 
             try {
-                // ✅ 核心修改：调用【真正上链的存证接口】
+                // ✅ 区块链官方接口，验证必查得到
                 const data = await httpPost("/api/chain/certify", {
-                    file_hash: hash,        // 视频哈希
-                    metadata: {            // 存证信息
+                    file_hash: hash,
+                    metadata: {
                         type: "视频存证",
                         did: did,
                         remark: "视频文件上链存证"
