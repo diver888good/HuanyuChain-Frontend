@@ -14,6 +14,8 @@
             <nav>
                 <a href="index.html" class="active">首页存证</a>
                 <a href="dashboard.html">管理面板</a>
+                <!-- 🔥 新增：个人中心（统一导航） -->
+                <a href="personal_center.html">个人中心</a>
                 <a href="did_identity.html">DID身份</a>
                 <a href="video_cert.html">视频存证</a>
                 <a href="federated_privacy.html">隐私计算</a>
@@ -67,21 +69,18 @@
 
     <script src="app.js"></script>
     <script>
-        // 兼容 app.js 标准初始化，无冲突
         document.addEventListener('DOMContentLoaded', () => {
-            // 登录状态判断
             const token = localStorage.getItem("token");
             const username = localStorage.getItem("username");
             if (token && username) {
                 document.getElementById("loginCard").style.display = "none";
                 document.getElementById("certCard").style.display = "block";
                 document.getElementById("verifyCard").style.display = "block";
-                // 初始化用户信息
                 initUserInfo();
             }
         });
 
-        // 登录功能（防重复点击 + 异常处理）
+        // 登录功能（原样保留）
         async function login() {
             const btn = document.getElementById("loginBtn");
             const user = document.getElementById("loginUser").value.trim();
@@ -112,7 +111,7 @@
             }
         }
 
-        // 文本生成哈希（防重复）
+        // 文本生成哈希（原样保留）
         function getHashFromText() {
             const btn = document.getElementById("textHashBtn");
             const text = document.getElementById("certText").value.trim();
@@ -131,7 +130,7 @@
             btn.disabled = false;
         }
 
-        // 文件生成哈希（防重复）
+        // 文件生成哈希（原样保留）
         function getHashFromFile() {
             const btn = document.getElementById("fileHashBtn");
             const file = document.getElementById("certFile").files[0];
@@ -155,7 +154,7 @@
             };
         }
 
-        // 提交存证（防重复 + 异常处理）
+        // 提交存证 + 同步记录到个人中心（核心修改）
         async function submitCert() {
             const btn = document.getElementById("submitBtn");
             const hash = document.getElementById("fileHash").value.trim();
@@ -175,9 +174,21 @@
                     metadata: { remark: meta }
                 });
                 const dom = document.getElementById("certResult");
+                
                 if (res.code === 200) {
+                    // 🔥 新增：文件存证记录保存到个人中心
+                    const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
+                    certRecords.unshift({
+                        type: "文件/文本存证",
+                        hash: hash,
+                        block_id: res.data.block_id,
+                        time: new Date().toLocaleString()
+                    });
+                    localStorage.setItem("MY_CERTS", JSON.stringify(certRecords));
+
                     dom.className = "result alert-success";
-                    dom.innerText = `成功\n区块：${res.data.block_id}`;
+                    dom.innerText = `✅ 存证成功！\n区块：${res.data.block_id}\n记录已保存至【个人中心】`;
+                    
                     // 清空表单
                     document.getElementById("certText").value = "";
                     document.getElementById("certFile").value = "";
@@ -196,7 +207,7 @@
             }
         }
 
-        // 存证验证（防重复 + 异常处理）
+        // 验证功能（原样保留）
         async function verifyHash() {
             const btn = document.getElementById("verifyBtn");
             const hash = document.getElementById("verifyHash").value.trim();
@@ -214,7 +225,7 @@
                 const dom = document.getElementById("verifyResult");
                 if (res.code === 200) {
                     dom.className = "result alert-success";
-                    dom.innerText = `验证通过\n时间：${res.data.created_at}`;
+                    dom.innerText = `✅ 验证通过\n时间：${res.data.created_at}`;
                 } else {
                     dom.className = "result alert-danger";
                     dom.innerText = res.msg || "验证失败";
@@ -225,6 +236,15 @@
             } finally {
                 btn.disabled = false;
                 btn.innerText = "验证";
+            }
+        }
+
+        // 初始化用户信息（原样保留）
+        function initUserInfo() {
+            const username = localStorage.getItem("username");
+            if (username) {
+                document.getElementById("userInfo").style.display = "block";
+                document.getElementById("username").innerText = username;
             }
         }
     </script>
