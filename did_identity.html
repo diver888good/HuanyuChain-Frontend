@@ -30,10 +30,9 @@
         <div class="card">
             <div class="card-header"><h3>DID身份（生成后永久固定）</h3></div>
             <div class="card-body">
-                <!-- 生成后自动灰化，永远点不动 -->
                 <button class="btn-primary" onclick="createDID()" id="createBtn">生成DID身份</button>
                 <div id="didResult" class="result"></div>
-                <p style="color:#999;margin-top:12px;font-size:12px;">⚠️ 仅可生成1次，生成后按钮锁定，DID永久不变</p>
+                <p style="color:#999;margin-top:12px;font-size:12px;">⚠️ 仅可生成1次，生成后按钮锁定，DID永久不变，密钥自动保管</p>
             </div>
         </div>
     </main>
@@ -43,14 +42,14 @@
         document.addEventListener('DOMContentLoaded', async () => {
             await verifyToken();
             
-            // 页面加载：如果已有DID，直接锁定按钮
+            // 读取本地存储的固定DID
             const saved_did = localStorage.getItem("MY_FIXED_DID");
             if(saved_did){
                 document.getElementById("didResult").innerText = "✅ 已固定DID：\n" + saved_did;
                 document.getElementById("didResult").className = "result alert-success";
                 
-                // 永久禁用按钮 + 变灰
-                let btn = document.getElementById("createBtn");
+                // 永久禁用按钮
+                const btn = document.getElementById("createBtn");
                 btn.disabled = true;
                 btn.style.opacity = "0.5";
                 btn.style.cursor = "not-allowed";
@@ -58,30 +57,31 @@
             }
         });
 
-        // 生成DID（仅1次机会）
+        // 生成DID（仅1次，适配最新后端）
         async function createDID() {
-            let btn = document.getElementById("createBtn");
-            let result_box = document.getElementById("didResult");
+            const btn = document.getElementById("createBtn");
+            const result_box = document.getElementById("didResult");
 
-            // 生成前直接锁定，防止重复点击
+            // 生成中锁定按钮
             btn.disabled = true;
             btn.style.opacity = "0.5";
             btn.style.cursor = "not-allowed";
             btn.innerText = "生成中...";
 
             try {
-                const res = await httpPost("/api/did/generate", { user_id: 1 });
+                // 🔥 关键修复：删除无用的 user_id 参数，适配后端
+                const res = await httpPost("/api/did/generate", {});
                 if(res.code === 200){
                     const did = res.data.did;
-                    // 永久保存DID
+                    // 本地永久保存
                     localStorage.setItem("MY_FIXED_DID", did);
 
                     result_box.className = "result alert-success";
-                    result_box.innerText = "✅ DID已永久锁定：\n" + did + "\n\n⚠️ 私钥无需保存，不影响任何存证！";
+                    result_box.innerText = "✅ DID已永久锁定：\n" + did + "\n\n⚠️ 密钥系统自动保管，无需手动保存！";
                 }else{
                     result_box.className = "result alert-danger";
-                    result_box.innerText = "生成失败";
-                    // 失败解锁按钮
+                    result_box.innerText = res.msg || "生成失败";
+                    // 失败恢复按钮
                     btn.disabled = false;
                     btn.style.opacity = "1";
                     btn.style.cursor = "pointer";
@@ -90,7 +90,7 @@
             } catch (error) {
                 result_box.className = "result alert-danger";
                 result_box.innerText = "网络异常，请重试";
-                // 失败解锁按钮
+                // 失败恢复按钮
                 btn.disabled = false;
                 btn.style.opacity = "1";
                 btn.style.cursor = "pointer";
