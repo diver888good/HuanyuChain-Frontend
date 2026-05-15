@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隐私计算</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1 class="logo">寰域链 V8.0</h1>
+            <button class="menu-toggle">☰</button>
+            <nav>
+                <a href="index.html">首页存证</a>
+                <a href="dashboard.html">管理面板</a>
+                <a href="did_identity.html">DID身份</a>
+                <a href="video_cert.html">视频存证</a>
+                <a href="federated_privacy.html" class="active">隐私计算</a>
+                <a href="metaverse_asset.html">元宇宙NFT</a>
+                <a href="gov_dashboard.html">政务中台</a>
+            </nav>
+            <div id="userInfo" style="display: none;"><span id="username"></span><button id="logoutBtn" class="btn-secondary">退出</button></div>
+        </div>
+    </header>
+    <main class="container">
+        <div class="card"><div class="card-header"><h3>PSI隐私求交</h3></div><div class="card-body"><textarea id="listA" rows="3"></textarea><textarea id="listB" rows="3"></textarea><button class="btn-primary" onclick="runPSI()">求交</button><div id="psiResult" class="result"></div></div></div>
+        <div class="card" style="margin-top:2rem;"><div class="card-header"><h3>联邦均值</h3></div><div class="card-body"><input id="numArr" placeholder="10,20,30"><button class="btn-primary" onclick="runAvg()">计算</button><div id="avgResult" class="result"></div></div></div>
+    </main>
+    <script src="app.js"></script>
+    <script>
+        window.onload = async ()=>{await verifyToken();}
+        async function runPSI(){
+            const a = document.getElementById("listA").value.split("\n").filter(x=>x.trim());
+            const b = document.getElementById("listB").value.split("\n").filter(x=>x.trim());
+            const data = await httpPost("/api/privacy/psi",{list_a:a,list_b:b});
+            const dom = document.getElementById("psiResult");
+            data.code===200 ? (dom.className="result alert-success",dom.innerText="结果："+data.data.join("\n")) : (dom.className="result alert-danger",dom.innerText=data.msg);
+        }
+        async function runAvg(){
+            const arr = document.getElementById("numArr").value.split(",").map(Number);
+            const data = await httpPost("/api/privacy/federated-avg",{values:arr});
+            const dom = document.getElementById("avgResult");
+            data.code===200 ? (dom.className="result alert-success",dom.innerText="均值："+data.data.avg) : (dom.className="result alert-danger",dom.innerText=data.msg);
+        }
+    </script>
+</body>
+</html>

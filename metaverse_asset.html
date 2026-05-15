@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>元宇宙NFT</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1 class="logo">寰域链 V8.0</h1>
+            <button class="menu-toggle">☰</button>
+            <nav>
+                <a href="index.html">首页存证</a>
+                <a href="dashboard.html">管理面板</a>
+                <a href="did_identity.html">DID身份</a>
+                <a href="video_cert.html">视频存证</a>
+                <a href="federated_privacy.html">隐私计算</a>
+                <a href="metaverse_asset.html" class="active">元宇宙NFT</a>
+                <a href="gov_dashboard.html">政务中台</a>
+            </nav>
+            <div id="userInfo" style="display: none;"><span id="username"></span><button id="logoutBtn" class="btn-secondary">退出</button></div>
+        </div>
+    </header>
+    <main class="container">
+        <div class="card"><div class="card-header"><h3>资产确权</h3></div><div class="card-body"><input id="assetName" placeholder="资产名"><input id="assetDid" placeholder="DID"><textarea id="modelRaw" rows="3"></textarea><button class="btn-primary" onclick="certMetaAsset()">确权</button><div id="assetResult" class="result"></div></div></div>
+        <div class="card" style="margin-top:2rem;"><div class="card-header"><h3>NFT铸造</h3></div><div class="card-body"><input id="nftAssetId" placeholder="资产ID"><input id="nftName" placeholder="NFT名"><input id="nftDid" placeholder="持有者DID"><button class="btn-primary" onclick="mintNFT()">铸造</button><div id="nftResult" class="result"></div></div></div>
+    </main>
+    <script src="app.js"></script>
+    <script>
+        window.onload = async ()=>{await verifyToken();}
+        async function certMetaAsset(){
+            const name = document.getElementById("assetName").value;
+            const did = document.getElementById("assetDid").value;
+            const raw = document.getElementById("modelRaw").value;
+            const data = await httpPost("/api/meta/asset/cert",{asset_name:name,did,model_raw:raw,asset_type:"3d_model"});
+            const dom = document.getElementById("assetResult");
+            data.code===200 ? (dom.className="result alert-success",dom.innerText=JSON.stringify(data.data,null,2)) : (dom.className="result alert-danger",dom.innerText=data.msg);
+        }
+        async function mintNFT(){
+            const aid = document.getElementById("nftAssetId").value;
+            const name = document.getElementById("nftName").value;
+            const did = document.getElementById("nftDid").value;
+            const data = await httpPost("/api/meta/nft/mint",{asset_id:aid,nft_name:name,did});
+            const dom = document.getElementById("nftResult");
+            data.code===200 ? (dom.className="result alert-success",dom.innerText=JSON.stringify(data.data,null,2)) : (dom.className="result alert-danger",dom.innerText=data.msg);
+        }
+    </script>
+</body>
+</html>

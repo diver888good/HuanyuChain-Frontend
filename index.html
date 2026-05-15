@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寰域链 V8.0 旗舰终版</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1 class="logo">寰域链 V8.0</h1>
+            <button class="menu-toggle">☰</button>
+            <nav>
+                <a href="index.html" class="active">首页存证</a>
+                <a href="dashboard.html">管理面板</a>
+                <a href="did_identity.html">DID身份</a>
+                <a href="video_cert.html">视频存证</a>
+                <a href="federated_privacy.html">隐私计算</a>
+                <a href="metaverse_asset.html">元宇宙NFT</a>
+                <a href="gov_dashboard.html">政务中台</a>
+            </nav>
+            <div id="userInfo" style="display: none;">
+                <span id="username"></span>
+                <button id="logoutBtn" class="btn-secondary">退出</button>
+            </div>
+        </div>
+    </header>
+    <main class="container">
+        <div class="card" id="loginCard">
+            <div class="card-header"><h3>用户登录</h3></div>
+            <div class="card-body">
+                <input type="text" id="loginUser" placeholder="用户名">
+                <input type="password" id="loginPwd" placeholder="密码">
+                <button class="btn-primary" onclick="login()">登录</button>
+            </div>
+        </div>
+        <div class="card" id="certCard" style="display:none;">
+            <div class="card-header"><h3>文件哈希存证</h3></div>
+            <div class="card-body">
+                <input type="text" id="fileHash" placeholder="SM3哈希值">
+                <textarea id="metaInfo" rows="3" placeholder="元数据"></textarea>
+                <button class="btn-primary" onclick="submitCert()">提交存证</button>
+                <div id="certResult" class="result"></div>
+            </div>
+        </div>
+        <div class="card" id="verifyCard" style="display:none;">
+            <div class="card-header"><h3>存证验证</h3></div>
+            <div class="card-body">
+                <input type="text" id="verifyHash" placeholder="哈希查询">
+                <button class="btn-primary" onclick="verifyHash()">验证</button>
+                <div id="verifyResult" class="result"></div>
+            </div>
+        </div>
+    </main>
+    <script src="app.js"></script>
+    <script>
+        window.onload = () => {
+            if(localStorage.getItem("token")){
+                document.getElementById("loginCard").style.display="none";
+                document.getElementById("certCard").style.display="block";
+                document.getElementById("verifyCard").style.display="block";
+            }
+        }
+        async function login(){
+            const user = document.getElementById("loginUser").value;
+            const pwd = document.getElementById("loginPwd").value;
+            const res = await httpPost("/api/auth/login",{username:user,password:pwd});
+            if(res.code===200){
+                localStorage.setItem("token",res.data.token);
+                localStorage.setItem("username",res.data.username);
+                location.reload();
+            }else alert(res.msg);
+        }
+        async function submitCert(){
+            const hash = document.getElementById("fileHash").value;
+            const meta = document.getElementById("metaInfo").value;
+            const res = await httpPost("/api/chain/certify",{file_hash:hash,metadata:{remark:meta}});
+            const dom = document.getElementById("certResult");
+            if(res.code===200){dom.className="result alert-success";dom.innerText=`成功\n区块：${res.data.block_id}`;}
+            else{dom.className="result alert-danger";dom.innerText=res.msg;}
+        }
+        async function verifyHash(){
+            const hash = document.getElementById("verifyHash").value;
+            const res = await httpGet(`/api/chain/verify/${hash}`);
+            const dom = document.getElementById("verifyResult");
+            if(res.code===200){dom.className="result alert-success";dom.innerText=`验证通过\n时间：${res.data.created_at}`;}
+            else{dom.className="result alert-danger";dom.innerText=res.msg;}
+        }
+    </script>
+</body>
+</html>
