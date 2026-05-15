@@ -1,5 +1,5 @@
-// 修复：后端接口统一加 /api 前缀（核心修复！）
-const API_BASE = "https://huanyuchain.pythonanywhere.com/api";
+// 【核心正确】基地址 = 后端根域名
+const API_BASE = "https://huanyuchain.pythonanywhere.com";
 let token = localStorage.getItem("token");
 let username = localStorage.getItem("username");
 
@@ -37,7 +37,7 @@ async function verifyToken() {
     return true;
 }
 
-// 网络请求（自动匹配后端接口）
+// 网络请求（完全匹配后端）
 async function httpPost(url, data) {
     try {
         const headers = {"Content-Type":"application/json"};
