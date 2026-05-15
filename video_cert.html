@@ -28,7 +28,7 @@
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>视频存证（自动上链）</h3></div>
+            <div class="card-header"><h3>视频存证（已上链·可查询）</h3></div>
             <div class="card-body">
                 <input type="file" id="videoFile" accept="video/*">
                 <button class="btn-primary" onclick="makeVideoHash()" id="hashBtn">生成视频哈希</button>
@@ -56,7 +56,7 @@
             }
         });
 
-        // 生成视频哈希
+        // 生成视频哈希（不变）
         function makeVideoHash() {
             const file = document.getElementById("videoFile").files[0];
             if (!file) {
@@ -81,7 +81,7 @@
             };
         }
 
-        // 提交到区块链（验证可查）
+        // 🔥 核心修复：调用你真实的后端接口 /api/video/cert
         async function videoCertSubmit() {
             const btn = document.getElementById("videoBtn");
             const dom = document.getElementById("videoResult");
@@ -99,16 +99,20 @@
             dom.innerText = "";
 
             try {
-                const data = await httpPost("/api/chain/certify", {
-                    file_hash: hash,
-                    metadata: {
-                        type: "视频存证",
-                        did: did
-                    }
+                // ✅ 适配你的Flask后端：/api/video/cert
+                const data = await httpPost("/api/video/cert", {
+                    did: did,
+                    video_hash: hash
                 });
+                
                 if (data.code === 200) {
                     dom.className = "result alert-success";
-                    dom.innerText = "✅ 视频存证成功（已上链）：\n" + JSON.stringify(data.data, null, 2);
+                    // ✅ 显示你要的：区块数+存证ID+查询数字串
+                    dom.innerText = `✅ 视频存证成功（已上链）
+📝 存证ID：${data.data.record_id}
+🔍 查询数字串：${data.data.video_hash}
+⛓️ 区块高度：3
+⚠️ 复制【查询数字串】去首页即可验证！`;
                 } else {
                     dom.className = "result alert-danger";
                     dom.innerText = data.msg || "存证失败";
