@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>视频存证</title>
+    <title>视频存证 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,21 +20,72 @@
                 <a href="metaverse_asset.html">元宇宙NFT</a>
                 <a href="gov_dashboard.html">政务中台</a>
             </nav>
-            <div id="userInfo" style="display: none;"><span id="username"></span><button id="logoutBtn" class="btn-secondary">退出</button></div>
+            <div id="userInfo" style="display: none;">
+                <span id="username"></span>
+                <button id="logoutBtn" class="btn-secondary">退出</button>
+            </div>
         </div>
     </header>
     <main class="container">
-        <div class="card"><div class="card-header"><h3>视频存证</h3></div><div class="card-body"><input id="videoDid" placeholder="DID"><input id="videoHash" placeholder="视频哈希"><button class="btn-primary" onclick="videoCertSubmit()">提交</button><div id="videoResult" class="result"></div></div></div>
+        <div class="card">
+            <div class="card-header"><h3>视频存证</h3></div>
+            <div class="card-body">
+                <input id="videoDid" placeholder="DID">
+                <input id="videoHash" placeholder="视频哈希">
+                <button class="btn-primary" onclick="videoCertSubmit()" id="videoBtn">提交</button>
+                <div id="videoResult" class="result"></div>
+            </div>
+        </div>
     </main>
+
     <script src="app.js"></script>
     <script>
-        window.onload = async ()=>{await verifyToken();}
-        async function videoCertSubmit(){
-            const did = document.getElementById("videoDid").value;
-            const hash = document.getElementById("videoHash").value;
-            const data = await httpPost("/api/video/cert",{did,video_hash:hash});
+        // 兼容新版 app.js 标准初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            await verifyToken();
+        });
+
+        // 视频存证提交（修复：输入校验+防重复+异常捕获）
+        async function videoCertSubmit() {
+            const btn = document.getElementById("videoBtn");
             const dom = document.getElementById("videoResult");
-            data.code===200 ? (dom.className="result alert-success",dom.innerText=JSON.stringify(data.data,null,2)) : (dom.className="result alert-danger",dom.innerText=data.msg);
+            
+            // 获取输入值
+            const did = document.getElementById("videoDid").value.trim();
+            const hash = document.getElementById("videoHash").value.trim();
+
+            // 输入校验
+            if (!did || !hash) {
+                dom.className = "result alert-danger";
+                dom.innerText = "请填写完整的DID和视频哈希！";
+                return;
+            }
+
+            // 防重复点击
+            btn.disabled = true;
+            btn.innerText = "提交中...";
+            dom.innerText = "";
+
+            try {
+                const data = await httpPost("/api/video/cert", {
+                    did: did,
+                    video_hash: hash
+                });
+                if (data.code === 200) {
+                    dom.className = "result alert-success";
+                    dom.innerText = "✅ 视频存证成功：\n" + JSON.stringify(data.data, null, 2);
+                } else {
+                    dom.className = "result alert-danger";
+                    dom.innerText = data.msg || "存证失败";
+                }
+            } catch (error) {
+                dom.className = "result alert-danger";
+                dom.innerText = "网络异常，请重试";
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "提交";
+            }
         }
     </script>
 </body>
