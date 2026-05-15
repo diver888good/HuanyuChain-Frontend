@@ -28,7 +28,7 @@
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>视频存证</h3></div>
+            <div class="card-header"><h3>视频存证（真·上链版）</h3></div>
             <div class="card-body">
                 <!-- 选择视频 -->
                 <input type="file" id="videoFile" accept="video/*">
@@ -76,7 +76,7 @@
             };
         }
 
-        // 提交存证
+        // 提交存证 → 【关键修改】调用真上链接口！
         async function videoCertSubmit() {
             const btn = document.getElementById("videoBtn");
             const dom = document.getElementById("videoResult");
@@ -94,13 +94,18 @@
             dom.innerText = "";
 
             try {
-                const data = await httpPost("/api/video/cert", {
-                    did: did,
-                    video_hash: hash
+                // ✅ 核心修改：调用【真正上链的存证接口】
+                const data = await httpPost("/api/chain/certify", {
+                    file_hash: hash,        // 视频哈希
+                    metadata: {            // 存证信息
+                        type: "视频存证",
+                        did: did,
+                        remark: "视频文件上链存证"
+                    }
                 });
                 if (data.code === 200) {
                     dom.className = "result alert-success";
-                    dom.innerText = "✅ 视频存证成功：\n" + JSON.stringify(data.data, null, 2);
+                    dom.innerText = "✅ 视频存证成功（已上链）：\n" + JSON.stringify(data.data, null, 2);
                 } else {
                     dom.className = "result alert-danger";
                     dom.innerText = data.msg || "存证失败";
