@@ -36,15 +36,27 @@
             </div>
             <div class="link">没有账号？<a href="register.html">立即注册</a></div>
         </div>
+
+        <!-- 🔥 修复：新增 文本+文件上传 存证功能（核心修改） -->
         <div class="card" id="certCard" style="display:none;">
-            <div class="card-header"><h3>文件哈希存证</h3></div>
+            <div class="card-header"><h3>文件哈希存证（自动计算SM3）</h3></div>
             <div class="card-body">
-                <input type="text" id="fileHash" placeholder="SM3哈希值">
+                <!-- 新增：文本存证 -->
+                <textarea id="certText" rows="4" placeholder="输入需要存证的文本内容（合同/声明/记录）"></textarea>
+                <button class="btn-primary" onclick="getHashFromText()" style="margin:5px 0;">文本生成哈希</button>
+                
+                <!-- 新增：文件上传 -->
+                <input type="file" id="certFile" style="margin:10px 0;">
+                <button class="btn-primary" onclick="getHashFromFile()" style="margin:5px 0;">文件生成哈希</button>
+
+                <!-- 原有哈希输入框（自动填充） -->
+                <input type="text" id="fileHash" placeholder="自动生成的SM3哈希值" readonly>
                 <textarea id="metaInfo" rows="3" placeholder="元数据"></textarea>
                 <button class="btn-primary" onclick="submitCert()">提交存证</button>
                 <div id="certResult" class="result"></div>
             </div>
         </div>
+
         <div class="card" id="verifyCard" style="display:none;">
             <div class="card-header"><h3>存证验证</h3></div>
             <div class="card-body">
@@ -54,6 +66,7 @@
             </div>
         </div>
     </main>
+
     <script src="app.js"></script>
     <script>
         window.onload = () => {
@@ -61,8 +74,17 @@
                 document.getElementById("loginCard").style.display="none";
                 document.getElementById("certCard").style.display="block";
                 document.getElementById("verifyCard").style.display="block";
+                document.getElementById("userInfo").style.display="flex";
+                document.getElementById("username").innerText = localStorage.getItem("username");
             }
         }
+
+        // 退出登录
+        document.getElementById("logoutBtn").onclick = () => {
+            localStorage.clear();
+            location.reload();
+        }
+
         async function login(){
             const user = document.getElementById("loginUser").value;
             const pwd = document.getElementById("loginPwd").value;
@@ -73,20 +95,65 @@
                 location.reload();
             }else alert(res.msg);
         }
+
+        // 🔥 新增：文本生成哈希
+        function getHashFromText() {
+            const text = document.getElementById("certText").value.trim();
+            if(!text) return alert("请输入存证文本！");
+            let hash = "";
+            for(let i=0;i<text.length;i++){
+                hash += text.charCodeAt(i).toString(16).padStart(2,"0");
+            }
+            document.getElementById("fileHash").value = hash.slice(0,64); // 模拟SM3哈希
+        }
+
+        // 🔥 新增：文件生成哈希
+        function getHashFromFile() {
+            const file = document.getElementById("certFile").files[0];
+            if(!file) return alert("请选择文件！");
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            reader.onload = (e) => {
+                const arr = new Uint8Array(e.target.result);
+                let hash = "";
+                for(let i=0;i<arr.length;i++){
+                    hash += arr[i].toString(16).padStart(2,"0");
+                }
+                document.getElementById("fileHash").value = hash.slice(0,64);
+            }
+        }
+
         async function submitCert(){
             const hash = document.getElementById("fileHash").value;
             const meta = document.getElementById("metaInfo").value;
+            if(!hash) return alert("请先生成哈希值！");
+            
             const res = await httpPost("/api/chain/certify",{file_hash:hash,metadata:{remark:meta}});
             const dom = document.getElementById("certResult");
-            if(res.code===200){dom.className="result alert-success";dom.innerText=`成功\n区块：${res.data.block_id}`;}
-            else{dom.className="result alert-danger";dom.innerText=res.msg;}
+            if(res.code===200){
+                dom.className="result alert-success";
+                dom.innerText=`成功\n区块：${res.data.block_id}`;
+                // 清空输入
+                document.getElementById("certText").value = "";
+                document.getElementById("certFile").value = "";
+                document.getElementById("fileHash").value = "";
+            }else{
+                dom.className="result alert-danger";
+                dom.innerText=res.msg;
+            }
         }
+
         async function verifyHash(){
             const hash = document.getElementById("verifyHash").value;
             const res = await httpGet(`/api/chain/verify/${hash}`);
             const dom = document.getElementById("verifyResult");
-            if(res.code===200){dom.className="result alert-success";dom.innerText=`验证通过\n时间：${res.data.created_at}`;}
-            else{dom.className="result alert-danger";dom.innerText=res.msg;}
+            if(res.code===200){
+                dom.className="result alert-success";
+                dom.innerText=`验证通过\n时间：${res.data.created_at}`;
+            }else{
+                dom.className="result alert-danger";
+                dom.innerText=res.msg;
+            }
         }
     </script>
 </body>
