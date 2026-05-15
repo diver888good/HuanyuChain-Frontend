@@ -28,53 +28,58 @@
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>去中心化DID身份生成</h3></div>
+            <div class="card-header"><h3>去中心化DID身份（永久固定）</h3></div>
             <div class="card-body">
-                <button class="btn-primary" onclick="createDID()" id="createBtn">生成DID身份</button>
+                <button class="btn-primary" onclick="createDID()" id="createBtn">生成DID身份（仅生成一次）</button>
                 <div id="didResult" class="result"></div>
+                <p style="color:#666;margin-top:10px;">⚠️ 仅允许生成一次，生成后DID永久固定，不可修改！</p>
             </div>
         </div>
     </main>
 
     <script src="app.js"></script>
     <script>
-        // 标准初始化，兼容新版 app.js
         document.addEventListener('DOMContentLoaded', async () => {
             await verifyToken();
+            // 加载时检查：如果已有DID，直接显示，禁用按钮
+            const localDID = localStorage.getItem("MY_ONLY_DID");
+            if (localDID) {
+                document.getElementById("didResult").className = "result alert-success";
+                document.getElementById("didResult").innerText = "✅ 你的固定DID：\n" + localDID;
+                document.getElementById("createBtn").disabled = true;
+                document.getElementById("createBtn").innerText = "DID已固定（不可重复生成）";
+            }
         });
 
-        // 生成DID（修复重复点击 + 异常捕获）
         async function createDID() {
             const btn = document.getElementById("createBtn");
             const dom = document.getElementById("didResult");
-            
-            // 防重复点击
+
             btn.disabled = true;
             btn.innerText = "生成中...";
             dom.innerText = "";
 
             try {
-                // 调用后端接口
                 const data = await httpPost("/api/did/generate", { user_id: 1 });
-                
                 if (data.code === 200) {
-                    // 生成成功
+                    const did = data.data.did;
+                    // ✅ 永久保存DID，禁止再次生成
+                    localStorage.setItem("MY_ONLY_DID", did);
+                    
                     dom.className = "result alert-success";
-                    dom.innerText = `✅ DID身份：${data.data.did}\n🔑 私钥（请妥善保存）：${data.data.private_key}`;
+                    dom.innerText = `✅ DID已永久固定：\n${did}\n\n⚠️ 请勿再次生成！`;
+                    // 生成后永久禁用按钮
+                    btn.disabled = true;
+                    btn.innerText = "DID已固定（不可修改）";
                 } else {
-                    // 业务失败
                     dom.className = "result alert-danger";
-                    dom.innerText = data.msg || "DID生成失败";
+                    dom.innerText = data.msg || "生成失败";
+                    btn.disabled = false;
                 }
             } catch (error) {
-                // 网络异常
                 dom.className = "result alert-danger";
-                dom.innerText = "网络异常，请重试";
-                console.error(error);
-            } finally {
-                // 恢复按钮
+                dom.innerText = "网络异常";
                 btn.disabled = false;
-                btn.innerText = "生成DID身份";
             }
         }
     </script>
