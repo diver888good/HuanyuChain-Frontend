@@ -1,4 +1,5 @@
-const API_BASE = "https://huanyuchain.pythonanywhere.com";
+// 修复：后端接口统一加 /api 前缀（核心修复！）
+const API_BASE = "https://huanyuchain.pythonanywhere.com/api";
 let token = localStorage.getItem("token");
 let username = localStorage.getItem("username");
 
@@ -21,21 +22,36 @@ function initUserInfo() {
 
 function bindLogoutEvent() {
     const btn = document.getElementById("logoutBtn");
-    if (btn) btn.addEventListener("click", () => {localStorage.clear();location.href="index.html";});
+    if (btn) btn.addEventListener("click", () => {
+        localStorage.clear();
+        location.href = "index.html";
+    });
 }
 
 async function verifyToken() {
-    if (!token) {alert("请先登录！");location.href="index.html";return false;}
+    if (!token) {
+        alert("请先登录！");
+        location.href = "index.html";
+        return false;
+    }
     return true;
 }
 
+// 网络请求（自动匹配后端接口）
 async function httpPost(url, data) {
     try {
         const headers = {"Content-Type":"application/json"};
         if (token) headers["Authorization"] = `Bearer ${token}`;
-        const res = await fetch(`${API_BASE}${url}`, {method:"POST",headers:headers,body:JSON.stringify(data)});
+        const res = await fetch(`${API_BASE}${url}`, {
+            method:"POST",
+            headers:headers,
+            body:JSON.stringify(data)
+        });
         return await res.json();
-    } catch (e) {alert("网络异常");return {code:500,msg:"网络错误"};}
+    } catch (e) {
+        alert("网络异常");
+        return {code:500,msg:"网络错误"};
+    }
 }
 
 async function httpGet(url) {
@@ -44,5 +60,8 @@ async function httpGet(url) {
         if (token) headers["Authorization"] = `Bearer ${token}`;
         const res = await fetch(`${API_BASE}${url}`, {headers:headers});
         return await res.json();
-    } catch (e) {alert("网络异常");return {code:500,msg:"网络错误"};}
+    } catch (e) {
+        alert("网络异常");
+        return {code:500,msg:"网络错误"};
+    }
 }
