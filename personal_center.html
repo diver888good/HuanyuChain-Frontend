@@ -54,7 +54,7 @@
         </div>
     </header>
     <main class="container">
-        <!-- 我的身份信息（DID+密钥，保留用于未来签字功能） -->
+        <!-- 我的身份信息（DID+密钥） -->
         <div class="card">
             <div class="card-header"><h3>🔑 我的身份信息</h3></div>
             <div class="card-body">
@@ -69,7 +69,7 @@
             </div>
         </div>
 
-        <!-- 我的存证记录（查询字符串永久保存） -->
+        <!-- 我的存证记录 -->
         <div class="card" style="margin-top:20px;">
             <div class="card-header"><h3>📄 我的存证记录（查询串）</h3></div>
             <div class="card-body" id="certList">暂无存证记录</div>
@@ -78,40 +78,43 @@
 
     <script src="app.js"></script>
     <script>
+        // 页面加载：登录校验 + 加载数据
         document.addEventListener('DOMContentLoaded', async () => {
             await verifyToken();
             loadPersonalInfo();
             loadCertRecords();
         });
 
-        // 加载DID+密钥
+        // 加载DID+密钥（防报错版）
         function loadPersonalInfo() {
-            const info = JSON.parse(localStorage.getItem("MY_DID_INFO") || "{}");
-            document.getElementById("myDid").innerText = info.did || "未生成DID";
-            document.getElementById("myKey").innerText = info.private_key || "未生成密钥";
+            const info = localStorage.getItem("MY_DID_INFO");
+            const userInfo = info ? JSON.parse(info) : {};
+            document.getElementById("myDid").innerText = userInfo.did || "未生成DID";
+            document.getElementById("myKey").innerText = userInfo.private_key || "未生成密钥";
         }
 
-        // 复制密钥（未来功能用）
+        // 复制密钥
         function copyKey() {
-            const info = JSON.parse(localStorage.getItem("MY_DID_INFO"));
-            if (info?.private_key) {
-                navigator.clipboard.writeText(info.private_key);
-                alert("密钥复制成功！");
-            }
+            const info = localStorage.getItem("MY_DID_INFO");
+            if (!info) { alert("请先生成DID！"); return; }
+            const userInfo = JSON.parse(info);
+            navigator.clipboard.writeText(userInfo.private_key);
+            alert("密钥复制成功！");
         }
 
-        // 加载所有存证记录
+        // 加载存证记录
         function loadCertRecords() {
             const list = document.getElementById("certList");
-            const records = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
+            const records = localStorage.getItem("MY_CERTS");
+            const certList = records ? JSON.parse(records) : [];
 
-            if (records.length === 0) {
+            if (certList.length === 0) {
                 list.innerHTML = "暂无存证记录";
                 return;
             }
 
             let html = "";
-            records.forEach(item => {
+            certList.forEach(item => {
                 html += `
                 <div class="cert-item">
                     <p>类型：${item.type}</p>
@@ -124,7 +127,7 @@
             list.innerHTML = html;
         }
 
-        // 复制查询字符串
+        // 复制查询串
         function copyHash(hash) {
             navigator.clipboard.writeText(hash);
             alert("复制成功！去首页验证即可~");
