@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DID身份 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .result { margin: 20px 0; padding: 15px; border-radius: 8px; line-height: 1.6; }
+        .alert-success { background: #e6f7e6; color: #007f00; border: 1px solid #b2ebb2; }
+        .alert-danger { background: #ffe6e6; color: #cc0000; border: 1px solid #ffb2b2; }
+    </style>
 </head>
 <body>
     <header>
@@ -40,11 +45,18 @@
 
     <script src="app.js"></script>
     <script>
-        // 页面加载：自动读取已生成的DID+密钥
+        // 页面加载：登录校验 + 读取已生成的DID
         document.addEventListener('DOMContentLoaded', async () => {
-            await verifyToken();
+            // 校验登录状态，未登录自动跳转
+            const isLogin = await verifyToken();
+            if (!isLogin) return;
+            
+            // 显示顶部用户信息
+            showUserInfo();
+            
+            // 读取本地存储的DID信息
             const saved_info = localStorage.getItem("MY_DID_INFO");
-            if(saved_info){
+            if (saved_info) {
                 const info = JSON.parse(saved_info);
                 document.getElementById("didResult").innerText = "✅ 已固定DID：\n" + info.did;
                 document.getElementById("didResult").className = "result alert-success";
@@ -58,44 +70,53 @@
             }
         });
 
-        // 生成DID + 自动保存密钥（核心功能）
+        // 生成DID + 自动保存密钥（适配后端真实接口）
         async function createDID() {
             const btn = document.getElementById("createBtn");
             const result_box = document.getElementById("didResult");
 
+            // 按钮禁用状态
             btn.disabled = true;
             btn.style.opacity = "0.5";
             btn.innerText = "生成中...";
 
             try {
+                // 调用后端DID生成接口（100%匹配）
                 const res = await httpPost("/api/did/generate", {});
-                if(res.code === 200){
-                    // 永久存储：DID + 私钥（个人中心读取）
+                if (res.code === 200) {
+                    // 🔥 修复：后端返回字段为 sm2_private_key，完美适配
                     const userInfo = {
                         did: res.data.did,
-                        private_key: res.data.private_key
+                        private_key: res.data.sm2_private_key,
+                        public_key: res.data.sm2_public_key
                     };
+                    // 本地永久存储
                     localStorage.setItem("MY_DID_INFO", JSON.stringify(userInfo));
 
+                    // 渲染成功信息
                     result_box.className = "result alert-success";
                     result_box.innerText = "✅ DID生成完成！\n" + userInfo.did + "\n\n密钥已自动保存至【个人中心】";
                     
-                    // 生成后锁定按钮
+                    // 锁定按钮
                     btn.disabled = true;
                     btn.innerText = "DID已锁定";
-                }else{
+                } else {
+                    // 失败提示
                     result_box.className = "result alert-danger";
-                    result_box.innerText = res.msg || "生成失败";
+                    result_box.innerText = res.msg || "生成失败，每个用户仅可生成1次";
+                    // 恢复按钮
                     btn.disabled = false;
                     btn.style.opacity = "1";
                     btn.innerText = "生成DID身份";
                 }
             } catch (error) {
+                // 网络异常处理
                 result_box.className = "result alert-danger";
                 result_box.innerText = "网络异常，请重试";
                 btn.disabled = false;
                 btn.style.opacity = "1";
                 btn.innerText = "生成DID身份";
+                console.error(error);
             }
         }
     </script>
