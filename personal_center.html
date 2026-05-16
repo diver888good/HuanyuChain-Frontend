@@ -6,6 +6,11 @@
     <title>个人中心 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        /* 统一项目全局样式 */
+        .result { margin: 15px 0; padding: 12px 15px; border-radius: 6px; line-height: 1.5; font-size: 14px; }
+        .alert-success { background: #e6f7e6; color: #006600; border: 1px solid #c1eac1; }
+        .alert-danger { background: #fff0f0; color: #cc0000; border: 1px solid #ffc9c9; }
+
         .personal-box {
             background: #f8f9fa;
             padding: 12px;
@@ -26,6 +31,7 @@
             padding: 5px 12px;
             border-radius: 4px;
             cursor: pointer;
+            margin: 5px 0;
         }
         .cert-item {
             background: #fff;
@@ -37,6 +43,7 @@
     </style>
 </head>
 <body>
+    <!-- 统一全局头部导航 -->
     <header>
         <div class="header-container">
             <h1 class="logo">寰域链 V8.0</h1>
@@ -51,41 +58,51 @@
                 <a href="metaverse_asset.html">元宇宙NFT</a>
                 <a href="gov_dashboard.html">政务中台</a>
             </nav>
+            <!-- 统一用户信息/退出按钮 -->
+            <div id="userInfo" style="display: none;">
+                <span id="username"></span>
+                <button id="logoutBtn" class="btn-secondary">退出</button>
+            </div>
         </div>
     </header>
+
     <main class="container">
         <!-- 我的身份信息（DID+密钥） -->
         <div class="card">
-            <div class="card-header"><h3>🔑 我的身份信息</h3></div>
+            <div class="card-header"><h3>🔑 我的DID身份信息</h3></div>
             <div class="card-body">
                 <div class="personal-box">
-                    <p><strong>我的DID：</strong></p>
-                    <p class="hash-text" id="myDid">未生成</p>
+                    <p><strong>我的终身DID：</strong></p>
+                    <p class="hash-text" id="myDid">未生成，请前往DID身份页面创建</p>
                     
-                    <p><strong>电子签字密钥（未来扩展用）：</strong></p>
+                    <p><strong>SM2私钥（妥善保管）：</strong></p>
                     <p class="hash-text" id="myKey">未生成</p>
-                    <button class="copy-btn" onclick="copyKey()">复制密钥</button>
+                    <button class="copy-btn" onclick="copyKey()">复制私钥</button>
                 </div>
             </div>
         </div>
 
         <!-- 我的存证记录 -->
         <div class="card" style="margin-top:20px;">
-            <div class="card-header"><h3>📄 我的存证记录（查询串）</h3></div>
+            <div class="card-header"><h3>📄 我的链上存证记录</h3></div>
             <div class="card-body" id="certList">暂无存证记录</div>
         </div>
     </main>
 
     <script src="app.js"></script>
     <script>
-        // 页面加载：登录校验 + 加载数据
+        // 页面初始化：登录校验 + 显示用户信息 + 加载数据
         document.addEventListener('DOMContentLoaded', async () => {
-            await verifyToken();
+            const isLogin = await verifyToken();
+            if (!isLogin) return;
+            // 显示顶部用户信息
+            showUserInfo();
+            // 加载个人数据
             loadPersonalInfo();
             loadCertRecords();
         });
 
-        // 加载DID+密钥（防报错版）
+        // 加载DID+密钥（防报错兼容版）
         function loadPersonalInfo() {
             const info = localStorage.getItem("MY_DID_INFO");
             const userInfo = info ? JSON.parse(info) : {};
@@ -93,13 +110,17 @@
             document.getElementById("myKey").innerText = userInfo.private_key || "未生成密钥";
         }
 
-        // 复制密钥
+        // 复制私钥
         function copyKey() {
             const info = localStorage.getItem("MY_DID_INFO");
-            if (!info) { alert("请先生成DID！"); return; }
+            if (!info) {
+                alert("请先去DID身份页面生成终身DID！");
+                return;
+            }
             const userInfo = JSON.parse(info);
-            navigator.clipboard.writeText(userInfo.private_key);
-            alert("密钥复制成功！");
+            navigator.clipboard.writeText(userInfo.private_key)
+                .then(() => alert("✅ 私钥复制成功！请妥善保管"))
+                .catch(() => alert("❌ 复制失败，请手动复制"));
         }
 
         // 加载存证记录
@@ -109,17 +130,18 @@
             const certList = records ? JSON.parse(records) : [];
 
             if (certList.length === 0) {
-                list.innerHTML = "暂无存证记录";
+                list.innerHTML = "<p class='result alert-danger'>暂无存证记录</p>";
                 return;
             }
 
             let html = "";
-            certList.forEach(item => {
+            certList.forEach((item, index) => {
                 html += `
                 <div class="cert-item">
-                    <p>类型：${item.type}</p>
-                    <p>时间：${item.time}</p>
-                    <p><b>查询字符串：</b></p>
+                    <p>序号：${index + 1}</p>
+                    <p>存证类型：${item.type}</p>
+                    <p>存证时间：${item.time}</p>
+                    <p><b>链上查询串：</b></p>
                     <p class="hash-text">${item.hash}</p>
                     <button class="copy-btn" onclick="copyHash('${item.hash}')">复制查询串</button>
                 </div>`;
@@ -127,10 +149,11 @@
             list.innerHTML = html;
         }
 
-        // 复制查询串
+        // 复制存证查询串
         function copyHash(hash) {
-            navigator.clipboard.writeText(hash);
-            alert("复制成功！去首页验证即可~");
+            navigator.clipboard.writeText(hash)
+                .then(() => alert("✅ 复制成功！前往首页存证页面可验证"))
+                .catch(() => alert("❌ 复制失败，请手动复制"));
         }
     </script>
 </body>
