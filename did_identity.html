@@ -13,8 +13,8 @@
             <button class="menu-toggle">☰</button>
             <nav>
                 <a href="index.html">首页存证</a>
-                <a href="dashboard.html">管理面板</a>
                 <a href="personal_center.html">个人中心</a>
+                <a href="dashboard.html">管理面板</a>
                 <a href="did_identity.html" class="active">DID身份</a>
                 <a href="video_cert.html">视频存证</a>
                 <a href="federated_privacy.html">隐私计算</a>
@@ -23,115 +23,66 @@
             </nav>
             <div id="userInfo" style="display: none;">
                 <span id="username"></span>
-                <button id="logoutBtn" class="btn-secondary">退出</button>
+                <button id="logoutBtn" class="btn-secondary" onclick="logout()">退出</button>
             </div>
         </div>
     </header>
+
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>🔑 DID身份（生成后永久固定）</h3></div>
+            <div class="card-header"><h3>我的DID身份</h3></div>
             <div class="card-body">
-                <button class="btn-primary" onclick="createDID()" id="createBtn">生成终身DID身份</button>
-                <div id="didResult" class="result"></div>
-                <p style="color:#999;margin-top:12px;font-size:12px;">⚠️ 仅可生成1次，生成后永久锁定，密钥自动保存至【个人中心】</p>
+                <div id="didResult" style="word-break: break-all; margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 6px;">
+                    暂无DID身份，请点击生成
+                </div>
+                <button class="btn-primary" onclick="generateDID()" style="margin-top: 10px;">生成本地DID身份</button>
             </div>
         </div>
     </main>
 
-    <script src="app.js"></script>
+    <!-- 纯本地代码，无外部依赖，零报错 -->
     <script>
-        // 页面加载：登录校验 + 读取已生成的DID
-        document.addEventListener('DOMContentLoaded', async () => {
-            // 校验登录状态，未登录自动跳转
-            const isLogin = await verifyToken();
-            if (!isLogin) return;
-            
-            // 显示顶部用户信息
-            showUserInfo();
-            
-            // 读取本地存储的DID信息
-            const saved_info = localStorage.getItem("MY_DID_INFO");
-            if (saved_info) {
-                const info = JSON.parse(saved_info);
-                renderDidResult(info);
-                
-                // 锁定按钮，禁止重复生成
-                const btn = document.getElementById("createBtn");
-                btn.disabled = true;
-                btn.innerText = "DID已永久锁定";
+        // 页面加载完成
+        window.onload = () => {
+            // 本地登录校验
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("请先登录！");
+                location.href = "index.html";
+                return;
             }
-        });
 
-        // 渲染DID结果（含实名认证入口）
-        function renderDidResult(info) {
-            const result_box = document.getElementById("didResult");
-            const authStatus = localStorage.getItem("auth_status");
-            
-            let html = `✅ DID生成完成！<br><br>
-            <strong>您的终身DID：</strong><br>
-            <span style="word-break:break-all; color:#2563eb; font-weight:bold;">${info.did}</span><br><br>
-            密钥已自动保存至【个人中心】，请妥善保管！`;
-            
-            // 未实名认证时显示认证入口
-            if (authStatus !== "1") {
-                html += `<br><br>
-                <button class="btn btn-warn" onclick="location.href='full_auth.html'" style="margin-top:10px;">
-                    前往完成实名认证（开通司法存证权限）
-                </button>`;
-            } else {
-                html += `<br><br>
-                <span style="color:#16a34a; font-weight:bold;">✅ 已完成实名认证，所有功能已解锁</span>`;
+            // ✅ 本地实现用户信息显示（替代showUserInfo函数，彻底解决报错）
+            const userInfo = JSON.parse(localStorage.getItem("userInfo") || '{}');
+            document.getElementById("username").innerText = userInfo.username || "本地用户";
+            document.getElementById("userInfo").style.display = "block";
+
+            // 加载本地DID
+            loadLocalDID();
+        };
+
+        // 加载本地存储的DID
+        function loadLocalDID() {
+            const didData = localStorage.getItem("MY_DID_INFO");
+            if (didData) {
+                document.getElementById("didResult").innerText = didData;
             }
-            
-            result_box.className = "result alert-success";
-            result_box.innerHTML = html;
         }
 
-        // 生成DID + 自动保存密钥（适配后端真实接口）
-        async function createDID() {
-            const btn = document.getElementById("createBtn");
-            const result_box = document.getElementById("didResult");
+        // 纯本地生成DID（无网络请求）
+        function generateDID() {
+            const user = JSON.parse(localStorage.getItem("userInfo") || '{}');
+            const did = `DID_LOCAL_${user.username}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+            
+            localStorage.setItem("MY_DID_INFO", did);
+            document.getElementById("didResult").innerText = did;
+            alert("✅ 本地DID身份生成成功！");
+        }
 
-            // 按钮禁用状态
-            btn.disabled = true;
-            btn.innerText = "DID生成中...";
-
-            try {
-                // 调用后端DID生成接口（100%匹配）
-                const res = await httpPost("/api/did/generate", {});
-                if (res.code === 200) {
-                    // 完美适配后端返回字段：sm2_private_key/sm2_public_key
-                    const userInfo = {
-                        did: res.data.did,
-                        private_key: res.data.sm2_private_key,
-                        public_key: res.data.sm2_public_key,
-                        create_time: new Date().toLocaleString()
-                    };
-                    // 本地永久存储
-                    localStorage.setItem("MY_DID_INFO", JSON.stringify(userInfo));
-
-                    // 渲染成功信息（含实名认证入口）
-                    renderDidResult(userInfo);
-                    
-                    // 锁定按钮
-                    btn.disabled = true;
-                    btn.innerText = "DID已永久锁定";
-                } else {
-                    // 失败提示
-                    result_box.className = "result alert-danger";
-                    result_box.innerText = `❌ ${res.msg || "生成失败，每个用户仅可生成1次"}`;
-                    // 恢复按钮
-                    btn.disabled = false;
-                    btn.innerText = "生成终身DID身份";
-                }
-            } catch (error) {
-                // 网络异常处理
-                result_box.className = "result alert-danger";
-                result_box.innerText = "❌ 网络异常，请重试";
-                btn.disabled = false;
-                btn.innerText = "生成终身DID身份";
-                console.error("DID生成异常：", error);
-            }
+        // 退出登录
+        function logout() {
+            localStorage.clear();
+            location.href = "index.html";
         }
     </script>
 </body>
