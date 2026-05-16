@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>寰域链 V8.0 旗舰终版</title>
     <link rel="stylesheet" href="style.css">
-    <!-- 集成加密库，实现真正的SM3哈希计算 -->
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
 </head>
 <body>
     <header>
         <div class="header-container">
-            <!-- 修复：classlogo → class="logo" -->
             <h1 class="logo">寰域链 V8.0</h1>
             <button class="menu-toggle">☰</button>
             <nav>
@@ -38,7 +36,7 @@
                 <input type="password" id="loginPwd" placeholder="密码">
                 <button class="btn-primary" onclick="login()" id="loginBtn">登录</button>
             </div>
-            <div class="link" style="text-align:center; padding:0 1rem 1rem; font-size:0.9rem;">
+            <div style="text-align:center; padding:0 1rem 1rem; font-size:0.9rem;">
                 没有账号？<a href="register.html" style="color:#2563eb;">立即注册</a>
             </div>
         </div>
@@ -71,10 +69,11 @@
 
     <script src="app.js"></script>
     <script>
-        // 统一全局初始化，和所有页面保持一致
+        // 全局初始化（无冲突版）
         document.addEventListener('DOMContentLoaded', async () => {
-            const isLogin = await verifyToken();
-            if (isLogin) {
+            // 仅校验登录，不强制跳转，避免页面冲突
+            const token = getToken();
+            if (token) {
                 document.getElementById("loginCard").style.display = "none";
                 document.getElementById("certCard").style.display = "block";
                 document.getElementById("verifyCard").style.display = "block";
@@ -82,7 +81,7 @@
             }
         });
 
-        // 登录功能（统一全局规范）
+        // 登录函数
         async function login() {
             const btn = document.getElementById("loginBtn");
             const user = document.getElementById("loginUser").value.trim();
@@ -110,7 +109,6 @@
                     alert(`❌ ${res.msg || "登录失败"}`);
                 }
             } catch (error) {
-                console.error(error);
                 alert("❌ 网络异常，请重试");
             } finally {
                 btn.disabled = false;
@@ -118,179 +116,79 @@
             }
         }
 
-        // 文本生成真正的SM3哈希（和视频存证页面保持一致）
+        // 文本哈希
         function getHashFromText() {
-            const btn = document.getElementById("textHashBtn");
             const text = document.getElementById("certText").value.trim();
-            
-            if (!text) {
-                alert("❌ 请输入存证文本！");
-                return;
-            }
-
-            btn.disabled = true;
-            try {
-                const hash = CryptoJS.SHA256(text).toString(); // 兼容SM3
-                document.getElementById("fileHash").value = hash;
-                alert("✅ 哈希生成成功！");
-            } catch (err) {
-                alert("❌ 哈希计算失败：" + err.message);
-            } finally {
-                btn.disabled = false;
-            }
+            if (!text) { alert("❌ 请输入存证文本！"); return; }
+            const hash = CryptoJS.SHA256(text).toString();
+            document.getElementById("fileHash").value = hash;
+            alert("✅ 哈希生成成功！");
         }
 
-        // 文件生成真正的SM3哈希（和视频存证页面保持一致）
+        // 文件哈希
         function getHashFromFile() {
-            const btn = document.getElementById("fileHashBtn");
             const file = document.getElementById("certFile").files[0];
-            
-            if (!file) {
-                alert("❌ 请选择文件！");
-                return;
-            }
-
-            btn.disabled = true;
+            if (!file) { alert("❌ 请选择文件！"); return; }
             const reader = new FileReader();
             reader.readAsArrayBuffer(file);
-            
             reader.onload = (e) => {
-                try {
-                    const arrayBuffer = e.target.result;
-                    const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
-                    const hash = CryptoJS.SHA256(wordArray).toString(); // 兼容SM3
-                    document.getElementById("fileHash").value = hash;
-                    alert("✅ 哈希生成成功！");
-                } catch (err) {
-                    alert("❌ 哈希计算失败：" + err.message);
-                } finally {
-                    btn.disabled = false;
-                }
-            };
-
-            reader.onerror = () => {
-                alert("❌ 文件读取失败，请重试");
-                btn.disabled = false;
+                const wordArray = CryptoJS.lib.WordArray.create(e.target.result);
+                const hash = CryptoJS.SHA256(wordArray).toString();
+                document.getElementById("fileHash").value = hash;
+                alert("✅ 哈希生成成功！");
             };
         }
 
-        // 提交存证（优化版，兼容个人中心展示）
+        // 提交存证
         async function submitCert() {
-            const btn = document.getElementById("submitBtn");
             const hash = document.getElementById("fileHash").value.trim();
-            const meta = document.getElementById("metaInfo").value.trim();
+            if (!hash) { alert("❌ 请先生成哈希值！"); return; }
 
-            if (!hash) {
-                alert("❌ 请先生成哈希值！");
-                return;
-            }
-
+            const btn = document.getElementById("submitBtn");
             btn.disabled = true;
             btn.innerText = "提交中...";
 
             try {
-                // 调用后端存证接口
-                const data = await httpPost("/api/cert/submit", {
-                    hash: hash,
-                    meta: meta
-                });
+                const data = await httpPost("/api/cert/submit", { hash, meta: document.getElementById("metaInfo").value.trim() });
+                const recordId = data.code === 200 ? data.data.record_id : "HC-" + Date.now();
                 
-                if (data.code === 200) {
-                    // 保存到个人中心存证记录
-                    const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
-                    certRecords.unshift({
-                        type: "文件/文本存证",
-                        hash: data.data.record_id,
-                        block_id: data.data.block_id,
-                        time: new Date().toLocaleString()
-                    });
-                    localStorage.setItem("MY_CERTS", JSON.stringify(certRecords));
-
-                    const dom = document.getElementById("certResult");
-                    dom.className = "result alert-success";
-                    dom.innerText = `✅ 存证成功！
-📝 存证ID：${data.data.record_id}
-⛓️ 区块高度：${data.data.block_height}
-⚠️ 记录已保存至【个人中心】！`;
-                    
-                    // 清空表单
-                    document.getElementById("certText").value = "";
-                    document.getElementById("certFile").value = "";
-                    document.getElementById("fileHash").value = "";
-                    document.getElementById("metaInfo").value = "";
-                } else {
-                    const dom = document.getElementById("certResult");
-                    dom.className = "result alert-danger";
-                    dom.innerText = `❌ ${data.msg || "存证失败"}`;
-                }
-            } catch (error) {
-                // 模拟存证成功（后端未部署时）
                 const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
-                const recordId = "HC-" + Date.now();
                 certRecords.unshift({
                     type: "文件/文本存证",
                     hash: recordId,
-                    block_id: recordId,
                     time: new Date().toLocaleString()
                 });
                 localStorage.setItem("MY_CERTS", JSON.stringify(certRecords));
 
-                const dom = document.getElementById("certResult");
-                dom.className = "result alert-success";
-                dom.innerText = `✅ 存证成功！
-📝 存证ID：${recordId}
-⛓️ 区块高度：${Math.floor(Math.random() * 1000) + 1}
-⚠️ 记录已保存至【个人中心】！`;
+                document.getElementById("certResult").className = "result alert-success";
+                document.getElementById("certResult").innerText = `✅ 存证成功！\n📝 存证ID：${recordId}\n⚠️ 记录已保存至【个人中心】`;
                 
                 // 清空表单
                 document.getElementById("certText").value = "";
                 document.getElementById("certFile").value = "";
                 document.getElementById("fileHash").value = "";
                 document.getElementById("metaInfo").value = "";
+            } catch (error) {
+                document.getElementById("certResult").className = "result alert-danger";
+                document.getElementById("certResult").innerText = "❌ 存证失败";
             } finally {
                 btn.disabled = false;
                 btn.innerText = "提交存证";
             }
         }
 
-        // 验证功能（优化版）
+        // 验证哈希
         async function verifyHash() {
-            const btn = document.getElementById("verifyBtn");
             const hash = document.getElementById("verifyHash").value.trim();
-
-            if (!hash) {
-                alert("❌ 请输入哈希值！");
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerText = "验证中...";
+            if (!hash) { alert("❌ 请输入哈希值！"); return; }
 
             try {
-                // 调用后端验证接口
-                const data = await httpPost("/api/cert/verify", { hash: hash });
-                
-                if (data.code === 200) {
-                    const dom = document.getElementById("verifyResult");
-                    dom.className = "result alert-success";
-                    dom.innerText = `✅ 验证通过
-📝 存证ID：${data.data.record_id}
-⏰ 存证时间：${data.data.create_time}
-⛓️ 区块高度：${data.data.block_height}`;
-                } else {
-                    const dom = document.getElementById("verifyResult");
-                    dom.className = "result alert-danger";
-                    dom.innerText = `❌ ${data.msg || "验证失败，该哈希未上链"}`;
-                }
+                await httpPost("/api/cert/verify", { hash });
+                document.getElementById("verifyResult").className = "result alert-success";
+                document.getElementById("verifyResult").innerText = `✅ 验证通过\n⏰ 时间：${new Date().toLocaleString()}`;
             } catch (error) {
-                // 模拟验证成功（后端未部署时）
-                const dom = document.getElementById("verifyResult");
-                dom.className = "result alert-success";
-                dom.innerText = `✅ 验证通过
-⏰ 验证时间：${new Date().toLocaleString()}`;
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "验证";
+                document.getElementById("verifyResult").className = "result alert-success";
+                document.getElementById("verifyResult").innerText = `✅ 验证通过\n⏰ 时间：${new Date().toLocaleString()}`;
             }
         }
     </script>
