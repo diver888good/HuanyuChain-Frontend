@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>隐私计算 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* 统一项目结果框样式 */
+        .result { margin: 15px 0; padding: 12px 15px; border-radius: 6px; line-height: 1.5; font-size: 14px; }
+        .alert-success { background: #e6f7e6; color: #006600; border: 1px solid #c1eac1; }
+        .alert-danger { background: #fff0f0; color: #cc0000; border: 1px solid #ffc9c9; }
+        textarea, input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        button { margin-top: 10px; }
+    </style>
 </head>
 <body>
     <header>
@@ -29,20 +37,20 @@
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>PSI隐私求交</h3></div>
+            <div class="card-header"><h3>PSI隐私求交（数据隐私保护）</h3></div>
             <div class="card-body">
-                <textarea id="listA" rows="3" placeholder="数据集A（每行一个数据）"></textarea>
-                <textarea id="listB" rows="3" placeholder="数据集B（每行一个数据）"></textarea>
-                <button class="btn-primary" onclick="runPSI()" id="psiBtn">求交</button>
+                <textarea id="listA" rows="3" placeholder="数据集A（每行一个数据，例如：手机号/ID）"></textarea>
+                <textarea id="listB" rows="3" placeholder="数据集B（每行一个数据，例如：手机号/ID）"></textarea>
+                <button class="btn-primary" onclick="runPSI()" id="psiBtn">求交计算</button>
                 <div id="psiResult" class="result"></div>
             </div>
         </div>
 
         <div class="card" style="margin-top:2rem;">
-            <div class="card-header"><h3>联邦均值</h3></div>
+            <div class="card-header"><h3>联邦均值计算（数据不出库）</h3></div>
             <div class="card-body">
-                <input id="numArr" placeholder="数字列表，用逗号分隔：10,20,30">
-                <button class="btn-primary" onclick="runAvg()" id="avgBtn">计算</button>
+                <input id="numArr" placeholder="数字列表，用逗号分隔：10,20,30,40">
+                <button class="btn-primary" onclick="runAvg()" id="avgBtn">计算均值</button>
                 <div id="avgResult" class="result"></div>
             </div>
         </div>
@@ -50,12 +58,15 @@
 
     <script src="app.js"></script>
     <script>
-        // 兼容新版 app.js 标准初始化
+        // 页面初始化：登录校验 + 显示用户信息
         document.addEventListener('DOMContentLoaded', async () => {
-            await verifyToken();
+            const isLogin = await verifyToken();
+            if (!isLogin) return;
+            // 显示顶部用户信息
+            showUserInfo();
         });
 
-        // PSI隐私求交（修复：输入校验+防重复+异常捕获）
+        // PSI隐私求交
         async function runPSI() {
             const btn = document.getElementById("psiBtn");
             const dom = document.getElementById("psiResult");
@@ -65,7 +76,7 @@
             // 输入校验
             if (listA.length === 0 || listB.length === 0) {
                 dom.className = "result alert-danger";
-                dom.innerText = "请输入数据集A和数据集B！";
+                dom.innerText = "❌ 请输入数据集A和数据集B！";
                 return;
             }
 
@@ -75,41 +86,42 @@
             dom.innerText = "";
 
             try {
+                // 调用后端隐私求交接口
                 const data = await httpPost("/api/privacy/psi", { list_a: listA, list_b: listB });
                 if (data.code === 200) {
                     dom.className = "result alert-success";
-                    dom.innerText = "✅ 求交结果：\n" + data.data.join("\n");
+                    dom.innerText = "✅ 隐私求交结果：\n" + (data.data.join("\n") || "无交集");
                 } else {
                     dom.className = "result alert-danger";
-                    dom.innerText = data.msg || "计算失败";
+                    dom.innerText = `❌ ${data.msg || "计算失败"}`;
                 }
             } catch (error) {
                 dom.className = "result alert-danger";
-                dom.innerText = "网络异常，请重试";
-                console.error(error);
+                dom.innerText = "❌ 网络异常，请重试";
+                console.error("PSI计算异常：", error);
             } finally {
                 btn.disabled = false;
-                btn.innerText = "求交";
+                btn.innerText = "求交计算";
             }
         }
 
-        // 联邦均值计算（修复：输入校验+防重复+异常捕获）
+        // 联邦均值计算
         async function runAvg() {
             const btn = document.getElementById("avgBtn");
             const dom = document.getElementById("avgResult");
             const valStr = document.getElementById("numArr").value.trim();
 
-            // 输入校验
             if (!valStr) {
                 dom.className = "result alert-danger";
-                dom.innerText = "请输入数字列表！";
+                dom.innerText = "❌ 请输入数字列表！";
                 return;
             }
 
+            // 格式化数字数组
             const arr = valStr.split(",").map(Number).filter(n => !isNaN(n));
             if (arr.length === 0) {
                 dom.className = "result alert-danger";
-                dom.innerText = "请输入有效的数字！";
+                dom.innerText = "❌ 请输入有效的数字！";
                 return;
             }
 
@@ -119,21 +131,22 @@
             dom.innerText = "";
 
             try {
+                // 调用后端联邦均值接口
                 const data = await httpPost("/api/privacy/federated-avg", { values: arr });
                 if (data.code === 200) {
                     dom.className = "result alert-success";
-                    dom.innerText = "✅ 联邦均值：" + data.data.avg;
+                    dom.innerText = `✅ 联邦均值计算结果：${data.data.avg.toFixed(2)}`;
                 } else {
                     dom.className = "result alert-danger";
-                    dom.innerText = data.msg || "计算失败";
+                    dom.innerText = `❌ ${data.msg || "计算失败"}`;
                 }
             } catch (error) {
                 dom.className = "result alert-danger";
-                dom.innerText = "网络异常，请重试";
-                console.error(error);
+                dom.innerText = "❌ 网络异常，请重试";
+                console.error("联邦均值计算异常：", error);
             } finally {
                 btn.disabled = false;
-                btn.innerText = "计算";
+                btn.innerText = "计算均值";
             }
         }
     </script>
