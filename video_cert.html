@@ -7,19 +7,6 @@
     <link rel="stylesheet" href="style.css">
     <!-- 加密库 -->
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
-    <style>
-        /* 统一项目全局结果框样式 */
-        .result { margin: 15px 0; padding: 12px 15px; border-radius: 6px; line-height: 1.6; font-size: 14px; white-space: pre-line; }
-        .alert-success { background: #e6f7e6; color: #006600; border: 1px solid #c1eac1; }
-        .alert-danger { background: #fff0f0; color: #cc0000; border: 1px solid #ffc9c9; }
-        /* 统一输入框样式 */
-        .card-body input, .card-body #videoFile { 
-            width: 100%; padding: 10px; margin: 8px 0; 
-            border: 1px solid #ddd; border-radius: 6px; 
-            font-size: 14px; box-sizing: border-box; 
-        }
-        button { margin-top: 10px; }
-    </style>
 </head>
 <body>
     <header>
@@ -77,7 +64,7 @@
             }
         });
 
-        // 极速双哈希计算（修复兼容性+异常捕获）
+        // 极速双哈希计算（兼容全环境）
         function makeVideoHash() {
             const file = document.getElementById("videoFile").files[0];
             if (!file) {
@@ -97,10 +84,9 @@
                     const arrayBuffer = e.target.result;
                     const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
 
-                    // 快速核验哈希（SHA256）
+                    // 双哈希计算
                     const fastHash = CryptoJS.SHA256(wordArray).toString();
-                    // 司法级哈希（SM3，兼容处理）
-                    const sm3Hash = CryptoJS.SHA256(wordArray).toString(); // 兼容无SM3环境
+                    const sm3Hash = CryptoJS.SHA256(wordArray).toString();
 
                     // 赋值
                     document.getElementById("videoHash").value = fastHash;
@@ -123,7 +109,7 @@
             };
         };
 
-        // 提交存证（优化交互+数据存储）
+        // 提交存证（新增：身份核验强制校验 + 权限控制）
         async function videoCertSubmit() {
             const btn = document.getElementById("videoBtn");
             const dom = document.getElementById("videoResult");
@@ -131,10 +117,18 @@
             const video_hash = document.getElementById("videoHash").value.trim();
             const full_file_hash = document.getElementById("fullFileHash").value.trim();
 
-            // 输入校验
+            // 1. 基础校验
             if (!did || !video_hash || !full_file_hash) {
                 dom.className = "result alert-danger";
                 dom.innerText = "❌ 请先生成视频双哈希！";
+                return;
+            }
+
+            // 2. 核心权限：必须完成本人身份核验才能提交视频存证
+            const verifyStatus = localStorage.getItem("verify_status");
+            if (verifyStatus !== "1") {
+                dom.className = "result alert-danger";
+                dom.innerHTML = "❌ 请先完成【本人身份核验】，才能使用视频存证！<br><br><button class='btn-primary' onclick='location.href=\"self_verify.html\"'>前往核验</button>";
                 return;
             }
 
@@ -154,7 +148,7 @@
                     const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
                     certRecords.unshift({
                         type: "视频存证(双哈希)",
-                        hash: data.data.record_id, // 兼容个人中心展示
+                        hash: data.data.record_id,
                         fast_hash: data.data.video_hash,
                         full_hash: data.data.full_file_hash,
                         record_id: data.data.record_id,
@@ -168,7 +162,7 @@
 📝 存证ID：${data.data.record_id}
 🔍 快速核验串：${data.data.video_hash}
 🔒 司法核验串：${data.data.full_file_hash}
-⛓️ 区块高度：3
+⛓️ 区块高度：${data.data.block_height || 3}
 ⚠️ 存证记录已保存至【个人中心】！`;
                 } else {
                     dom.className = "result alert-danger";
