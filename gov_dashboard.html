@@ -27,18 +27,44 @@
             </div>
         </div>
     </header>
+
     <main class="container">
-        <div class="card"><div class="card-header"><h3>政务中台（本地模式）</h3></div><div class="card-body"><p>功能已离线就绪</p></div></div>
+        <div class="card">
+            <div class="card-header"><h3>政务中台管理</h3></div>
+            <div class="card-body">
+                <p>本地模式运行中</p>
+                <p>存证总数：<span id="total">0</span></p>
+            </div>
+        </div>
     </main>
+
+    <!-- 纯本地代码，无app.js，无任何外部函数 -->
     <script>
-        window.onload = () => {
+        // 唯一加载逻辑，无Promise、无verifyToken、无showUserInfo
+        window.onload = function() {
+            // 本地登录判断
             const token = localStorage.getItem("token");
-            if (!token) { alert("请先登录！"); location.href = "index.html"; return; }
-            const user = JSON.parse(localStorage.getItem("userInfo")||'{}');
-            document.getElementById("username").innerText = user.username||"用户";
+            if (!token) {
+                alert("请先登录！");
+                location.href = "index.html";
+                return;
+            }
+
+            // 直接渲染用户名，不调用任何外部函数
+            const user = JSON.parse(localStorage.getItem("userInfo") || '{}');
+            document.getElementById("username").innerText = user.username || "本地用户";
             document.getElementById("userInfo").style.display = "block";
+
+            // 加载本地数据
+            const certs = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
+            document.getElementById("total").innerText = certs.length;
         };
-        function logout(){localStorage.clear();location.href="index.html";}
+
+        // 退出登录
+        function logout() {
+            localStorage.clear();
+            location.href = "index.html";
+        }
     </script>
 </body>
 </html>
