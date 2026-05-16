@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本人专属身份核验</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="auth-box" style="max-width:600px;margin:50px auto;">
+        <h3>🔒 本人私密信息核验（仅本人可通过）</h3>
+        <p>填写完整预留真实信息完成身份确认</p>
+
+        <div class="item">
+            <input type="text" id="vName" placeholder="真实姓名">
+        </div>
+        <div class="item">
+            <input type="text" id="vPhone" placeholder="预留手机号">
+        </div>
+        <div class="item">
+            <input type="text" id="vIdcard" placeholder="身份证号码">
+        </div>
+        <div class="item">
+            <input type="date" id="vBirth">
+        </div>
+        <div class="item">
+            <textarea id="vAddr" rows="2" placeholder="常住详细住址"></textarea>
+        </div>
+
+        <button class="btn btn-primary" onclick="checkSelfInfo()">提交核验</button>
+        <div id="verifyTip" style="margin-top:20px;"></div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        async function checkSelfInfo(){
+            let data = {
+                real_name:document.getElementById("vName").value,
+                phone:document.getElementById("vPhone").value,
+                id_card:document.getElementById("vIdcard").value,
+                birth_date:document.getElementById("vBirth").value,
+                address:document.getElementById("vAddr").value
+            }
+            let res = await httpPost("/api/auth/self-info-verify",data);
+            let tip = document.getElementById("verifyTip");
+            if(res.verify_result){
+                tip.innerHTML = "<span style='color:green'>✅ 身份核验通过，确认为本账号实际使用人</span>";
+                // 核验成功后可跳转对应存证页面
+            }else{
+                tip.innerHTML = "<span style='color:red'>❌ 信息不符，核验失败，非本人无法操作</span>";
+            }
+        }
+    </script>
+</body>
+</html>
