@@ -14,7 +14,6 @@
             <nav>
                 <a href="index.html" class="active">首页存证</a>
                 <a href="dashboard.html">管理面板</a>
-                <!-- 🔥 新增：个人中心（统一导航） -->
                 <a href="personal_center.html">个人中心</a>
                 <a href="did_identity.html">DID身份</a>
                 <a href="video_cert.html">视频存证</a>
@@ -80,7 +79,7 @@
             }
         });
 
-        // 登录功能（原样保留）
+        // ✅ 修复完成的登录函数（核心BUG已解决）
         async function login() {
             const btn = document.getElementById("loginBtn");
             const user = document.getElementById("loginUser").value.trim();
@@ -97,13 +96,15 @@
             try {
                 const res = await httpPost("/api/auth/login", { username: user, password: pwd });
                 if (res.code === 200) {
-                    localStorage.setItem("token", res.data.token);
-                    localStorage.setItem("username", res.data.username);
+                    // 修复：删除错误的 .data，直接读取返回字段
+                    localStorage.setItem("token", res.token);
+                    localStorage.setItem("username", res.username || user);
                     location.reload();
                 } else {
                     alert(res.msg || "登录失败");
                 }
             } catch (error) {
+                console.error("错误详情：", error);
                 alert("网络异常，请重试");
             } finally {
                 btn.disabled = false;
@@ -111,7 +112,7 @@
             }
         }
 
-        // 文本生成哈希（原样保留）
+        // 文本生成哈希
         function getHashFromText() {
             const btn = document.getElementById("textHashBtn");
             const text = document.getElementById("certText").value.trim();
@@ -130,7 +131,7 @@
             btn.disabled = false;
         }
 
-        // 文件生成哈希（原样保留）
+        // 文件生成哈希
         function getHashFromFile() {
             const btn = document.getElementById("fileHashBtn");
             const file = document.getElementById("certFile").files[0];
@@ -154,7 +155,7 @@
             };
         }
 
-        // 提交存证 + 同步记录到个人中心（核心修改）
+        // 提交存证
         async function submitCert() {
             const btn = document.getElementById("submitBtn");
             const hash = document.getElementById("fileHash").value.trim();
@@ -176,7 +177,6 @@
                 const dom = document.getElementById("certResult");
                 
                 if (res.code === 200) {
-                    // 🔥 新增：文件存证记录保存到个人中心
                     const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
                     certRecords.unshift({
                         type: "文件/文本存证",
@@ -189,7 +189,6 @@
                     dom.className = "result alert-success";
                     dom.innerText = `✅ 存证成功！\n区块：${res.data.block_id}\n记录已保存至【个人中心】`;
                     
-                    // 清空表单
                     document.getElementById("certText").value = "";
                     document.getElementById("certFile").value = "";
                     document.getElementById("fileHash").value = "";
@@ -207,7 +206,7 @@
             }
         }
 
-        // 验证功能（原样保留）
+        // 验证功能
         async function verifyHash() {
             const btn = document.getElementById("verifyBtn");
             const hash = document.getElementById("verifyHash").value.trim();
@@ -239,7 +238,7 @@
             }
         }
 
-        // 初始化用户信息（原样保留）
+        // 初始化用户信息
         function initUserInfo() {
             const username = localStorage.getItem("username");
             if (username) {
