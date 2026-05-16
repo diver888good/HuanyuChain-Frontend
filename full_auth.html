@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完整强实名认证 - 寰域链V8.0</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .auth-box{max-width:700px;margin:30px auto;padding:25px;background:#fff;border-radius:10px;box-shadow:0 0 10px #eee;}
+        .item{margin:15px 0;}
+        label{display:block;margin-bottom:6px;font-weight:500;}
+        input,textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;}
+        .btn{padding:12px 25px;border:none;border-radius:6px;color:#fff;cursor:pointer;margin-right:10px;}
+        .btn-primary{background:#2385ee;}
+        .btn-warn{background:#f59e0b;}
+        .tip{color:#666;font-size:14px;margin:5px 0;}
+        .red-tip{color:red;}
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-box">
+            <h2>寰域链可信诚信平台</h2>
+            <a href="did_center.html">DID身份中心</a>
+            <a href="index.html">首页</a>
+        </div>
+    </header>
+
+    <div class="auth-box">
+        <h3>🔐 全套强实名认证（开通司法存证权限）</h3>
+        <p class="red-tip">温馨提示：一人一证一号，认证后终身绑定，不可重复注册</p>
+        <p class="tip">必须先生成【终身主DID】才可提交实名</p>
+
+        <div class="item">
+            <label>真实姓名</label>
+            <input type="text" id="realName" placeholder="请填写本人真实姓名">
+        </div>
+
+        <div class="item">
+            <label>常用手机号</label>
+            <input type="text" id="phone" placeholder="11位有效手机号">
+        </div>
+
+        <div class="item">
+            <label>18位身份证号码</label>
+            <input type="text" id="idCard" placeholder="请输入完整身份证号">
+        </div>
+
+        <div class="item">
+            <label>出生年月日</label>
+            <input type="date" id="birthDate">
+        </div>
+
+        <div class="item">
+            <label>常住详细住址</label>
+            <textarea id="address" rows="3" placeholder="省市区街道门牌号详细填写"></textarea>
+        </div>
+
+        <div class="item">
+            <label>身份证正面照片</label>
+            <input type="file" id="idFront" accept="image/*">
+        </div>
+
+        <div class="item">
+            <label>身份证反面照片</label>
+            <input type="file" id="idBack" accept="image/*">
+        </div>
+
+        <div class="item">
+            <label>活体人脸识别核验</label>
+            <button class="btn btn-warn" onclick="openFaceVerify()">开始人脸采集核验</button>
+            <p class="tip">正对镜头完成活体检测，确保人证一致</p>
+        </div>
+
+        <div class="item">
+            <button class="btn btn-primary" onclick="submitFullAuth()">提交完整实名认证</button>
+        </div>
+
+        <div id="msgBox" style="margin-top:20px;"></div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        let userId = "";
+        let faceVerifyData = "";
+        let frontPath = "";
+        let backPath = "";
+
+        // 页面加载获取登录用户ID
+        window.onload = function(){
+            let userInfo = JSON.parse(localStorage.getItem("userInfo")||"{}");
+            userId = userInfo.id;
+            if(!userId){
+                alert("请先登录账号！");
+                location.href="login.html";
+            }
+        }
+
+        // 模拟人脸核验弹窗
+        function openFaceVerify(){
+            alert("正在唤起活体人脸识别组件，请正对手机摄像头完成核验");
+            // 核验成功后赋值人脸数据
+            faceVerifyData = "face_verify_success_data_"+new Date().getTime();
+            alert("人脸核验通过，可继续提交实名");
+        }
+
+        // 模拟图片上传获取存储路径
+        document.getElementById("idFront").addEventListener("change",function(e){
+            frontPath = "upload/id_front/"+new Date().getTime()+".jpg";
+        })
+        document.getElementById("idBack").addEventListener("change",function(e){
+            backPath = "upload/id_back/"+new Date().getTime()+".jpg";
+        })
+
+        // 提交实名请求
+        async function submitFullAuth(){
+            let realName = document.getElementById("realName").value.trim();
+            let phone = document.getElementById("phone").value.trim();
+            let idCard = document.getElementById("idCard").value.trim();
+            let birthDate = document.getElementById("birthDate").value;
+            let address = document.getElementById("address").value.trim();
+            let msgBox = document.getElementById("msgBox");
+
+            // 前端基础校验
+            if(!realName||!phone||!idCard||!birthDate||!address){
+                msgBox.innerHTML = "<span style='color:red'>请填写完整所有实名信息</span>";
+                return;
+            }
+            if(!/^1[3-9]\d{9}$/.test(phone)){
+                msgBox.innerHTML = "<span style='color:red'>手机号格式错误</span>";
+                return;
+            }
+            if(!/^\d{17}[\dXx]$/.test(idCard)){
+                msgBox.innerHTML = "<span style='color:red'>身份证号码格式错误</span>";
+                return;
+            }
+            if(!faceVerifyData){
+                msgBox.innerHTML = "<span style='color:red'>请先完成活体人脸识别核验</span>";
+                return;
+            }
+
+            let postData = {
+                user_id:userId,
+                real_name:realName,
+                phone:phone,
+                id_card:idCard,
+                birth_date:birthDate,
+                address:address,
+                id_front_path:frontPath,
+                id_back_path:backPath,
+                face_data:faceVerifyData
+            };
+
+            try{
+                let res = await httpPost("/api/auth/full-real-auth",postData);
+                if(res.code===200){
+                    msgBox.innerHTML = "<span style='color:green'>✅ 完整强实名认证成功！已绑定终身主DID，解锁全部可信存证权限</span>";
+                    // 实名成功跳转身份中心
+                    setTimeout(()=>{
+                        location.href="did_center.html";
+                    },2000)
+                }else{
+                    msgBox.innerHTML = `<span style='color:red'>${res.msg}</span>`;
+                }
+            }catch(err){
+                msgBox.innerHTML = "<span style='color:red'>网络请求失败，请重试</span>";
+            }
+        }
+    </script>
+</body>
+</html>
