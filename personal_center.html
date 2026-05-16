@@ -5,42 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人中心 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* 统一项目全局样式 */
-        .result { margin: 15px 0; padding: 12px 15px; border-radius: 6px; line-height: 1.5; font-size: 14px; }
-        .alert-success { background: #e6f7e6; color: #006600; border: 1px solid #c1eac1; }
-        .alert-danger { background: #fff0f0; color: #cc0000; border: 1px solid #ffc9c9; }
-
-        .personal-box {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 6px;
-            margin: 10px 0;
-            border-left: 4px solid #0066cc;
-        }
-        .hash-text {
-            color: #0066cc;
-            font-weight: bold;
-            word-break: break-all;
-            margin: 8px 0;
-        }
-        .copy-btn {
-            background: #0066cc;
-            color: #fff;
-            border: none;
-            padding: 5px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px 0;
-        }
-        .cert-item {
-            background: #fff;
-            padding: 10px;
-            margin: 8px 0;
-            border-radius: 4px;
-            border: 1px solid #eee;
-        }
-    </style>
 </head>
 <body>
     <!-- 统一全局头部导航 -->
@@ -79,6 +43,18 @@
                     <p class="hash-text" id="myKey">未生成</p>
                     <button class="copy-btn" onclick="copyKey()">复制私钥</button>
                 </div>
+
+                <!-- 新增：实名认证 + 身份核验 状态（核心功能入口） -->
+                <div class="personal-box" style="margin-top:15px;">
+                    <p><strong>实名认证状态：</strong>
+                        <span id="authStatus" style="color:#dc2626;">未认证</span>
+                        <button class="copy-btn" id="goAuth" onclick="location.href='full_auth.html'">去认证</button>
+                    </p>
+                    <p><strong>身份核验状态：</strong>
+                        <span id="verifyStatus" style="color:#dc2626;">未核验</span>
+                        <button class="copy-btn" id="goVerify" onclick="location.href='self_verify.html'">去核验</button>
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -95,14 +71,13 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const isLogin = await verifyToken();
             if (!isLogin) return;
-            // 显示顶部用户信息
             showUserInfo();
-            // 加载个人数据
             loadPersonalInfo();
+            loadAuthStatus(); // 加载认证状态
             loadCertRecords();
         });
 
-        // 加载DID+密钥（防报错兼容版）
+        // 加载DID+密钥
         function loadPersonalInfo() {
             const info = localStorage.getItem("MY_DID_INFO");
             const userInfo = info ? JSON.parse(info) : {};
@@ -110,11 +85,30 @@
             document.getElementById("myKey").innerText = userInfo.private_key || "未生成密钥";
         }
 
+        // 加载实名认证/核验状态（新增核心功能）
+        function loadAuthStatus() {
+            const auth = localStorage.getItem("auth_status");
+            const verify = localStorage.getItem("verify_status");
+
+            // 实名认证
+            if (auth === "1") {
+                document.getElementById("authStatus").innerText = "✅ 已认证";
+                document.getElementById("authStatus").style.color = "#16a34a";
+                document.getElementById("goAuth").style.display = "none";
+            }
+            // 身份核验
+            if (verify === "1") {
+                document.getElementById("verifyStatus").innerText = "✅ 已核验";
+                document.getElementById("verifyStatus").style.color = "#16a34a";
+                document.getElementById("goVerify").style.display = "none";
+            }
+        }
+
         // 复制私钥
         function copyKey() {
             const info = localStorage.getItem("MY_DID_INFO");
             if (!info) {
-                alert("请先去DID身份页面生成终身DID！");
+                alert("❌ 请先去DID身份页面生成终身DID！");
                 return;
             }
             const userInfo = JSON.parse(info);
