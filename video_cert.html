@@ -28,92 +28,45 @@
             </div>
         </div>
     </header>
-
     <main class="container">
         <div class="card">
             <div class="card-header"><h3>视频哈希存证</h3></div>
             <div class="card-body">
-                <input type="file" id="videoFile" accept="video/*" style="margin:10px 0;">
+                <input type="file" id="videoFile" accept="video/*">
                 <button class="btn-primary" onclick="getVideoHash()">生成视频哈希</button>
-                
-                <div style="margin:15px 0;">
-                    <label>哈希值：</label>
-                    <input type="text" id="videoHash" readonly style="width:100%; padding:8px; margin-top:5px;">
-                </div>
-
-                <button class="btn-primary" onclick="submitVideoCert()">提交视频存证</button>
-                <div id="certResult" style="margin-top:15px; padding:10px; border-radius:6px;"></div>
+                <input type="text" id="videoHash" readonly style="width:100%; margin:10px 0; padding:8px;">
+                <button class="btn-primary" onclick="submitVideoCert()">提交存证</button>
+                <div id="certResult" style="margin-top:10px;"></div>
             </div>
         </div>
     </main>
-
-    <!-- 纯本地代码，无任何外部依赖，零报错 -->
     <script>
-        // 页面加载完成（无外部函数，纯独立运行）
         window.onload = () => {
-            // 本地登录校验
             const token = localStorage.getItem("token");
-            if (!token) {
-                alert("请先登录！");
-                location.href = "index.html";
-                return;
-            }
-
-            // ✅ 直接渲染用户名（替代 showUserInfo，彻底解决报错）
-            const userInfo = JSON.parse(localStorage.getItem("userInfo") || '{}');
-            document.getElementById("username").innerText = userInfo.username || "本地用户";
+            if (!token) { alert("请先登录！"); location.href = "index.html"; return; }
+            const user = JSON.parse(localStorage.getItem("userInfo")||'{}');
+            document.getElementById("username").innerText = user.username||"用户";
             document.getElementById("userInfo").style.display = "block";
         };
-
-        // 生成视频哈希值（纯本地计算）
-        function getVideoHash() {
+        function getVideoHash(){
             const file = document.getElementById("videoFile").files[0];
-            if (!file) {
-                alert("请选择视频文件！");
-                return;
-            }
-
+            if(!file){alert("请选择视频");return;}
             const reader = new FileReader();
             reader.readAsArrayBuffer(file);
-            reader.onload = (e) => {
-                const wordArray = CryptoJS.lib.WordArray.create(e.target.result);
-                const hash = CryptoJS.SHA256(wordArray).toString();
+            reader.onload = e=>{
+                const hash = CryptoJS.SHA256(CryptoJS.lib.WordArray.create(e.target.result)).toString();
                 document.getElementById("videoHash").value = hash;
-                alert("✅ 视频哈希生成成功！");
-            };
-        }
-
-        // 提交视频存证（纯本地保存）
-        function submitVideoCert() {
-            const hash = document.getElementById("videoHash").value.trim();
-            if (!hash) {
-                alert("请先生成视频哈希！");
-                return;
+                alert("哈希生成成功");
             }
-
-            // 生成本地存证记录
-            const recordId = "VIDEO-" + Date.now();
-            const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
-            
-            certRecords.unshift({
-                type: "视频存证",
-                hash: recordId,
-                time: new Date().toLocaleString()
-            });
-            localStorage.setItem("MY_CERTS", JSON.stringify(certRecords));
-
-            // 显示结果
-            const resultBox = document.getElementById("certResult");
-            resultBox.style.background = "#f0fdf4";
-            resultBox.style.color = "#16a34a";
-            resultBox.innerText = `✅ 视频存证成功！\n存证ID：${recordId}\n已同步至个人中心`;
         }
-
-        // 退出登录
-        function logout() {
-            localStorage.clear();
-            location.href = "index.html";
+        function submitVideoCert(){
+            const h = document.getElementById("videoHash").value;
+            if(!h){alert("先生成哈希");return;}
+            const r = "VIDEO-"+Date.now();
+            localStorage.setItem("MY_CERTS",JSON.stringify([{type:"视频存证",hash:r,time:new Date().toLocaleString()},...JSON.parse(localStorage.getItem("MY_CERTS")||"[]")]));
+            document.getElementById("certResult").innerHTML=`✅ 存证成功！ID：${r}`;
         }
+        function logout(){localStorage.clear();location.href="index.html";}
     </script>
 </body>
 </html>
