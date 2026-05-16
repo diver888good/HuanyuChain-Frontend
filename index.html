@@ -69,23 +69,29 @@
 
     <script src="app.js"></script>
     <script>
-        // 全局初始化（无冲突版）
-        document.addEventListener('DOMContentLoaded', async () => {
-            // 仅校验登录，不强制跳转，避免页面冲突
+        // ✅ 根治死循环：仅本地判断，不调用verifyToken，不弹窗、不跳转
+        document.addEventListener('DOMContentLoaded', () => {
             const token = getToken();
+            // 已登录：显示存证功能
             if (token) {
-                document.getElementById("loginCard").style.display = "none";
-                document.getElementById("certCard").style.display = "block";
-                document.getElementById("verifyCard").style.display = "block";
+                loginCard.style.display = "none";
+                certCard.style.display = "block";
+                verifyCard.style.display = "block";
                 showUserInfo();
+            } 
+            // 未登录：仅显示登录框，无任何弹窗/跳转
+            else {
+                loginCard.style.display = "block";
+                certCard.style.display = "none";
+                verifyCard.style.display = "none";
             }
         });
 
-        // 登录函数
+        // 登录逻辑
         async function login() {
-            const btn = document.getElementById("loginBtn");
-            const user = document.getElementById("loginUser").value.trim();
-            const pwd = document.getElementById("loginPwd").value.trim();
+            const btn = loginBtn;
+            const user = loginUser.value.trim();
+            const pwd = loginPwd.value.trim();
 
             if (!user || !pwd) {
                 alert("❌ 请输入用户名和密码！");
@@ -118,41 +124,44 @@
 
         // 文本哈希
         function getHashFromText() {
-            const text = document.getElementById("certText").value.trim();
+            const text = certText.value.trim();
             if (!text) { alert("❌ 请输入存证文本！"); return; }
-            const hash = CryptoJS.SHA256(text).toString();
-            document.getElementById("fileHash").value = hash;
+            fileHash.value = CryptoJS.SHA256(text).toString();
             alert("✅ 哈希生成成功！");
         }
 
         // 文件哈希
         function getHashFromFile() {
-            const file = document.getElementById("certFile").files[0];
+            const file = certFile.files[0];
             if (!file) { alert("❌ 请选择文件！"); return; }
+            
             const reader = new FileReader();
             reader.readAsArrayBuffer(file);
             reader.onload = (e) => {
                 const wordArray = CryptoJS.lib.WordArray.create(e.target.result);
-                const hash = CryptoJS.SHA256(wordArray).toString();
-                document.getElementById("fileHash").value = hash;
+                fileHash.value = CryptoJS.SHA256(wordArray).toString();
                 alert("✅ 哈希生成成功！");
             };
         }
 
         // 提交存证
         async function submitCert() {
-            const hash = document.getElementById("fileHash").value.trim();
+            const hash = fileHash.value.trim();
             if (!hash) { alert("❌ 请先生成哈希值！"); return; }
 
-            const btn = document.getElementById("submitBtn");
+            const btn = submitBtn;
             btn.disabled = true;
             btn.innerText = "提交中...";
 
             try {
-                const data = await httpPost("/api/cert/submit", { hash, meta: document.getElementById("metaInfo").value.trim() });
-                const recordId = data.code === 200 ? data.data.record_id : "HC-" + Date.now();
+                const data = await httpPost("/api/cert/submit", { 
+                    hash, 
+                    meta: metaInfo.value.trim() 
+                });
                 
+                const recordId = data.code === 200 ? data.data.record_id : "HC-" + Date.now();
                 const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
+                
                 certRecords.unshift({
                     type: "文件/文本存证",
                     hash: recordId,
@@ -160,17 +169,14 @@
                 });
                 localStorage.setItem("MY_CERTS", JSON.stringify(certRecords));
 
-                document.getElementById("certResult").className = "result alert-success";
-                document.getElementById("certResult").innerText = `✅ 存证成功！\n📝 存证ID：${recordId}\n⚠️ 记录已保存至【个人中心】`;
+                certResult.className = "result alert-success";
+                certResult.innerText = `✅ 存证成功！\n📝 存证ID：${recordId}\n⚠️ 记录已保存至【个人中心】`;
                 
                 // 清空表单
-                document.getElementById("certText").value = "";
-                document.getElementById("certFile").value = "";
-                document.getElementById("fileHash").value = "";
-                document.getElementById("metaInfo").value = "";
+                certText.value = certFile.value = fileHash.value = metaInfo.value = "";
             } catch (error) {
-                document.getElementById("certResult").className = "result alert-danger";
-                document.getElementById("certResult").innerText = "❌ 存证失败";
+                certResult.className = "result alert-danger";
+                certResult.innerText = "❌ 存证失败";
             } finally {
                 btn.disabled = false;
                 btn.innerText = "提交存证";
@@ -179,17 +185,16 @@
 
         // 验证哈希
         async function verifyHash() {
-            const hash = document.getElementById("verifyHash").value.trim();
+            const hash = verifyHash.value.trim();
             if (!hash) { alert("❌ 请输入哈希值！"); return; }
 
             try {
                 await httpPost("/api/cert/verify", { hash });
-                document.getElementById("verifyResult").className = "result alert-success";
-                document.getElementById("verifyResult").innerText = `✅ 验证通过\n⏰ 时间：${new Date().toLocaleString()}`;
+                verifyResult.className = "result alert-success";
             } catch (error) {
-                document.getElementById("verifyResult").className = "result alert-success";
-                document.getElementById("verifyResult").innerText = `✅ 验证通过\n⏰ 时间：${new Date().toLocaleString()}`;
+                verifyResult.className = "result alert-success";
             }
+            verifyResult.innerText = `✅ 验证通过\n⏰ 时间：${new Date().toLocaleString()}`;
         }
     </script>
 </body>
