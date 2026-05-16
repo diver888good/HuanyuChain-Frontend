@@ -7,147 +7,90 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- 统一全局头部导航 -->
     <header>
         <div class="header-container">
             <h1 class="logo">寰域链 V8.0</h1>
             <button class="menu-toggle">☰</button>
             <nav>
                 <a href="index.html">首页存证</a>
-                <a href="dashboard.html">管理面板</a>
                 <a href="personal_center.html" class="active">个人中心</a>
+                <a href="dashboard.html">管理面板</a>
                 <a href="did_identity.html">DID身份</a>
                 <a href="video_cert.html">视频存证</a>
                 <a href="federated_privacy.html">隐私计算</a>
                 <a href="metaverse_asset.html">元宇宙NFT</a>
                 <a href="gov_dashboard.html">政务中台</a>
             </nav>
-            <!-- 统一用户信息/退出按钮 -->
             <div id="userInfo" style="display: none;">
                 <span id="username"></span>
-                <button id="logoutBtn" class="btn-secondary">退出</button>
+                <button class="btn-secondary" onclick="logout()">退出</button>
             </div>
         </div>
     </header>
 
     <main class="container">
-        <!-- 我的身份信息（DID+密钥） -->
         <div class="card">
-            <div class="card-header"><h3>🔑 我的DID身份信息</h3></div>
+            <div class="card-header"><h3>个人信息</h3></div>
             <div class="card-body">
-                <div class="personal-box">
-                    <p><strong>我的终身DID：</strong></p>
-                    <p class="hash-text" id="myDid">未生成，请前往DID身份页面创建</p>
-                    
-                    <p><strong>SM2私钥（妥善保管）：</strong></p>
-                    <p class="hash-text" id="myKey">未生成</p>
-                    <button class="copy-btn" onclick="copyKey()">复制私钥</button>
-                </div>
-
-                <!-- 新增：实名认证 + 身份核验 状态（核心功能入口） -->
-                <div class="personal-box" style="margin-top:15px;">
-                    <p><strong>实名认证状态：</strong>
-                        <span id="authStatus" style="color:#dc2626;">未认证</span>
-                        <button class="copy-btn" id="goAuth" onclick="location.href='full_auth.html'">去认证</button>
-                    </p>
-                    <p><strong>身份核验状态：</strong>
-                        <span id="verifyStatus" style="color:#dc2626;">未核验</span>
-                        <button class="copy-btn" id="goVerify" onclick="location.href='self_verify.html'">去核验</button>
-                    </p>
-                </div>
+                <p>用户名：<span id="userName"></span></p>
+                <p>DID身份：<span id="userDID">未生成</span></p>
             </div>
         </div>
 
-        <!-- 我的存证记录 -->
-        <div class="card" style="margin-top:20px;">
-            <div class="card-header"><h3>📄 我的链上存证记录</h3></div>
-            <div class="card-body" id="certList">暂无存证记录</div>
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header"><h3>我的存证记录</h3></div>
+            <div class="card-body" id="certList">
+                暂无存证记录
+            </div>
         </div>
     </main>
 
-    <script src="app.js"></script>
     <script>
-        // 页面初始化：登录校验 + 显示用户信息 + 加载数据
-        document.addEventListener('DOMContentLoaded', async () => {
-            const isLogin = await verifyToken();
-            if (!isLogin) return;
-            showUserInfo();
-            loadPersonalInfo();
-            loadAuthStatus(); // 加载认证状态
-            loadCertRecords();
-        });
-
-        // 加载DID+密钥
-        function loadPersonalInfo() {
-            const info = localStorage.getItem("MY_DID_INFO");
-            const userInfo = info ? JSON.parse(info) : {};
-            document.getElementById("myDid").innerText = userInfo.did || "未生成DID";
-            document.getElementById("myKey").innerText = userInfo.private_key || "未生成密钥";
-        }
-
-        // 加载实名认证/核验状态（新增核心功能）
-        function loadAuthStatus() {
-            const auth = localStorage.getItem("auth_status");
-            const verify = localStorage.getItem("verify_status");
-
-            // 实名认证
-            if (auth === "1") {
-                document.getElementById("authStatus").innerText = "✅ 已认证";
-                document.getElementById("authStatus").style.color = "#16a34a";
-                document.getElementById("goAuth").style.display = "none";
-            }
-            // 身份核验
-            if (verify === "1") {
-                document.getElementById("verifyStatus").innerText = "✅ 已核验";
-                document.getElementById("verifyStatus").style.color = "#16a34a";
-                document.getElementById("goVerify").style.display = "none";
-            }
-        }
-
-        // 复制私钥
-        function copyKey() {
-            const info = localStorage.getItem("MY_DID_INFO");
-            if (!info) {
-                alert("❌ 请先去DID身份页面生成终身DID！");
-                return;
-            }
-            const userInfo = JSON.parse(info);
-            navigator.clipboard.writeText(userInfo.private_key)
-                .then(() => alert("✅ 私钥复制成功！请妥善保管"))
-                .catch(() => alert("❌ 复制失败，请手动复制"));
-        }
-
-        // 加载存证记录
-        function loadCertRecords() {
-            const list = document.getElementById("certList");
-            const records = localStorage.getItem("MY_CERTS");
-            const certList = records ? JSON.parse(records) : [];
-
-            if (certList.length === 0) {
-                list.innerHTML = "<p class='result alert-danger'>暂无存证记录</p>";
+        // 纯本地加载，无异步、无app.js、无任何外部函数
+        window.onload = function() {
+            // 登录校验
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("请先登录！");
+                location.href = "index.html";
                 return;
             }
 
+            // 渲染用户信息（替代showUserInfo）
+            const user = JSON.parse(localStorage.getItem("userInfo") || '{}');
+            document.getElementById("userName").innerText = user.username || "本地用户";
+            document.getElementById("username").innerText = user.username || "本地用户";
+            document.getElementById("userInfo").style.display = "block";
+
+            // 渲染DID
+            const did = localStorage.getItem("MY_DID_INFO");
+            if (did) document.getElementById("userDID").innerText = did;
+
+            // 渲染存证记录
+            loadCertList();
+        };
+
+        // 加载本地存证
+        function loadCertList() {
+            const list = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
+            const box = document.getElementById("certList");
+            if (list.length === 0) {
+                box.innerHTML = "暂无存证记录";
+                return;
+            }
             let html = "";
-            certList.forEach((item, index) => {
-                html += `
-                <div class="cert-item">
-                    <p>序号：${index + 1}</p>
-                    <p>存证类型：${item.type}</p>
-                    <p>存证时间：${item.time}</p>
-                    <p><b>链上查询串：</b></p>
-                    <p class="hash-text">${item.hash}</p>
-                    <button class="copy-btn" onclick="copyHash('${item.hash}')">复制查询串</button>
+            list.forEach(item => {
+                html += `<div style="padding:8px; border-bottom:1px solid #eee;">
+                    ${item.type} | ${item.time}<br>ID: ${item.hash}
                 </div>`;
             });
-            list.innerHTML = html;
+            box.innerHTML = html;
         }
 
-        // 复制存证查询串
-        function copyHash(hash) {
-            navigator.clipboard.writeText(hash)
-                .then(() => alert("✅ 复制成功！前往首页存证页面可验证"))
-                .catch(() => alert("❌ 复制失败，请手动复制"));
+        // 退出登录
+        function logout() {
+            localStorage.clear();
+            location.href = "index.html";
         }
     </script>
 </body>
