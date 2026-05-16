@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>元宇宙NFT - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* 统一项目全局样式 */
+        .result { margin: 15px 0; padding: 12px 15px; border-radius: 6px; line-height: 1.5; font-size: 14px; }
+        .alert-success { background: #e6f7e6; color: #006600; border: 1px solid #c1eac1; }
+        .alert-danger { background: #fff0f0; color: #cc0000; border: 1px solid #ffc9c9; }
+        .card-body input, .card-body textarea { 
+            width: 100%; padding: 10px; margin: 8px 0; 
+            border: 1px solid #ddd; border-radius: 6px; 
+            font-size: 14px; box-sizing: border-box; 
+        }
+        button { margin-top: 10px; }
+    </style>
 </head>
 <body>
     <header>
@@ -30,24 +42,24 @@
     <main class="container">
         <!-- 资产确权 -->
         <div class="card">
-            <div class="card-header"><h3>资产确权</h3></div>
+            <div class="card-header"><h3>🖼️ 3D数字资产确权</h3></div>
             <div class="card-body">
-                <input id="assetName" placeholder="资产名">
-                <input id="assetDid" placeholder="DID">
-                <textarea id="modelRaw" rows="3" placeholder="3D模型原始数据"></textarea>
-                <button class="btn-primary" onclick="certMetaAsset()" id="assetBtn">确权</button>
+                <input id="assetName" placeholder="请输入数字资产名称">
+                <input id="assetDid" placeholder="系统自动填充您的DID，无需修改">
+                <textarea id="modelRaw" rows="3" placeholder="请输入3D模型原始数据/描述信息"></textarea>
+                <button class="btn-primary" onclick="certMetaAsset()" id="assetBtn">资产确权上链</button>
                 <div id="assetResult" class="result"></div>
             </div>
         </div>
 
         <!-- NFT铸造 -->
         <div class="card" style="margin-top:2rem;">
-            <div class="card-header"><h3>NFT铸造</h3></div>
+            <div class="card-header"><h3>🎫 NFT数字藏品铸造</h3></div>
             <div class="card-body">
-                <input id="nftAssetId" placeholder="资产ID">
-                <input id="nftName" placeholder="NFT名">
-                <input id="nftDid" placeholder="持有者DID">
-                <button class="btn-primary" onclick="mintNFT()" id="nftBtn">铸造</button>
+                <input id="nftAssetId" placeholder="请输入已确权的资产ID">
+                <input id="nftName" placeholder="请输入NFT藏品名称">
+                <input id="nftDid" placeholder="系统自动填充持有者DID">
+                <button class="btn-primary" onclick="mintNFT()" id="nftBtn">铸造NFT</button>
                 <div id="nftResult" class="result"></div>
             </div>
         </div>
@@ -55,17 +67,31 @@
 
     <script src="app.js"></script>
     <script>
-        // 兼容新版 app.js 标准初始化
+        // 页面初始化：登录校验 + 显示用户信息 + 自动填充DID
         document.addEventListener('DOMContentLoaded', async () => {
-            await verifyToken();
+            const isLogin = await verifyToken();
+            if (!isLogin) return;
+            // 显示顶部用户信息
+            showUserInfo();
+            // 自动填充本地存储的DID（无需手动输入）
+            autoFillDid();
         });
 
-        // 资产确权（修复：输入校验+防重复+异常捕获）
+        // 🔥 自动填充用户DID（核心优化）
+        function autoFillDid() {
+            const didInfo = localStorage.getItem("MY_DID_INFO");
+            if (didInfo) {
+                const { did } = JSON.parse(didInfo);
+                document.getElementById("assetDid").value = did;
+                document.getElementById("nftDid").value = did;
+            }
+        }
+
+        // 数字资产确权
         async function certMetaAsset() {
             const btn = document.getElementById("assetBtn");
             const dom = document.getElementById("assetResult");
             
-            // 获取输入值
             const name = document.getElementById("assetName").value.trim();
             const did = document.getElementById("assetDid").value.trim();
             const raw = document.getElementById("modelRaw").value.trim();
@@ -73,13 +99,13 @@
             // 输入校验
             if (!name || !did || !raw) {
                 dom.className = "result alert-danger";
-                dom.innerText = "请填写完整信息！";
+                dom.innerText = "❌ 请填写完整的资产信息！";
                 return;
             }
 
             // 防重复点击
             btn.disabled = true;
-            btn.innerText = "确权中...";
+            btn.innerText = "确权上链中...";
             dom.innerText = "";
 
             try {
@@ -91,27 +117,26 @@
                 });
                 if (data.code === 200) {
                     dom.className = "result alert-success";
-                    dom.innerText = "✅ 资产确权成功：\n" + JSON.stringify(data.data, null, 2);
+                    dom.innerText = "✅ 数字资产确权成功！\n资产信息已永久上链存证";
                 } else {
                     dom.className = "result alert-danger";
-                    dom.innerText = data.msg || "确权失败";
+                    dom.innerText = `❌ ${data.msg || "资产确权失败"}`;
                 }
             } catch (error) {
                 dom.className = "result alert-danger";
-                dom.innerText = "网络异常，请重试";
-                console.error(error);
+                dom.innerText = "❌ 网络异常，请重试";
+                console.error("资产确权异常：", error);
             } finally {
                 btn.disabled = false;
-                btn.innerText = "确权";
+                btn.innerText = "资产确权上链";
             }
         }
 
-        // NFT铸造（修复：输入校验+防重复+异常捕获）
+        // NFT数字藏品铸造
         async function mintNFT() {
             const btn = document.getElementById("nftBtn");
             const dom = document.getElementById("nftResult");
             
-            // 获取输入值
             const aid = document.getElementById("nftAssetId").value.trim();
             const name = document.getElementById("nftName").value.trim();
             const did = document.getElementById("nftDid").value.trim();
@@ -119,13 +144,13 @@
             // 输入校验
             if (!aid || !name || !did) {
                 dom.className = "result alert-danger";
-                dom.innerText = "请填写完整信息！";
+                dom.innerText = "❌ 请填写完整的NFT信息！";
                 return;
             }
 
             // 防重复点击
             btn.disabled = true;
-            btn.innerText = "铸造中...";
+            btn.innerText = "NFT铸造中...";
             dom.innerText = "";
 
             try {
@@ -136,18 +161,18 @@
                 });
                 if (data.code === 200) {
                     dom.className = "result alert-success";
-                    dom.innerText = "✅ NFT铸造成功：\n" + JSON.stringify(data.data, null, 2);
+                    dom.innerText = "✅ NFT铸造成功！\n数字藏品已生成，归属权绑定您的DID";
                 } else {
                     dom.className = "result alert-danger";
-                    dom.innerText = data.msg || "铸造失败";
+                    dom.innerText = `❌ ${data.msg || "NFT铸造失败"}`;
                 }
             } catch (error) {
                 dom.className = "result alert-danger";
-                dom.innerText = "网络异常，请重试";
-                console.error(error);
+                dom.innerText = "❌ 网络异常，请重试";
+                console.error("NFT铸造异常：", error);
             } finally {
                 btn.disabled = false;
-                btn.innerText = "铸造";
+                btn.innerText = "铸造NFT";
             }
         }
     </script>
