@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DID终身身份中心</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .center-box{max-width:700px;margin:30px auto;padding:25px;background:#fff;border-radius:10px;}
+        .did-item{padding:15px;border:1px solid #eee;border-radius:8px;margin:10px 0;}
+        .status-full{color:green;font-weight:bold;}
+        .status-unauth{color:red;}
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-box">
+            <h2>DID终身唯一身份管理中心</h2>
+            <a href="index.html">首页</a>
+            <a href="full_auth.html">去实名认证</a>
+        </div>
+    </header>
+
+    <div class="center-box">
+        <div id="statusShow"></div>
+
+        <div class="did-item">
+            <h4>一键生成终身主DID</h4>
+            <button class="btn btn-primary" onclick="createMainDid()">立即创建</button>
+            <p class="tip">一个账号仅可创建一个，终身永久使用</p>
+        </div>
+
+        <div class="did-item" id="didInfoBox" style="display:none;">
+            <p>您的终身主DID：<span id="myDid"></span></p>
+            <p>SM2公钥：<span id="pubKey"></span></p>
+            <p>SM2私钥：<span id="priKey"></span></p>
+            <p class="tip">私钥请妥善保管，登录账号可自动恢复</p>
+        </div>
+
+        <div class="did-item">
+            <h4>本人私密身份核验</h4>
+            <button class="btn btn-warn" onclick="openSelfVerify()">进入核验</button>
+            <p class="tip">高权限存证操作必须完成本人核验</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        let userId = "";
+        window.onload = function(){
+            let user = JSON.parse(localStorage.getItem("userInfo")||"{}");
+            userId = user.id;
+            if(!userId)location.href="login.html";
+            showUserStatus();
+        }
+
+        // 获取用户实名与DID状态
+        async function showUserStatus(){
+            // 此处对接用户信息接口，渲染实名状态
+        }
+
+        // 创建终身主DID
+        async function createMainDid(){
+            let res = await httpPost("/api/did/create-main-did",{user_id:userId});
+            if(res.code===200){
+                alert(res.msg);
+                document.getElementById("didInfoBox").style.display="block";
+                document.getElementById("myDid").innerText = res.data.did;
+                document.getElementById("pubKey").innerText = res.data.sm2_public_key;
+                document.getElementById("priKey").innerText = res.data.sm2_private_key;
+            }else{
+                alert(res.msg);
+            }
+        }
+
+        // 跳转本人身份核验页面
+        function openSelfVerify(){
+            location.href="self_verify.html";
+        }
+    </script>
+</body>
+</html>
