@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寰域链 - 用户注册</title>
+    <title>用户注册 - 寰域链 V8.0</title>
     <!-- 复用全站统一样式，保持风格一致 -->
     <link rel="stylesheet" href="style.css">
     <style>
@@ -12,34 +12,43 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: calc(100vh - 60px);
+            min-height: calc(100vh - 80px);
             padding: 1rem;
+        }
+        /* 统一输入框间距 */
+        .card-body input {
+            margin: 10px 0 !important;
         }
     </style>
 </head>
 <body>
-    <!-- 统一头部导航（和全站保持一致） -->
+    <!-- 统一全局头部导航 -->
     <header>
         <div class="header-container">
             <h1 class="logo">寰域链 V8.0</h1>
             <button class="menu-toggle">☰</button>
             <nav>
-                <a href="index.html">返回登录</a>
+                <a href="login.html">返回登录</a>
+                <a href="index.html">首页</a>
             </nav>
         </div>
     </header>
 
     <main class="container register-container">
-        <div class="card" style="width: 100%; max-width: 400px;">
+        <div class="card" style="width: 100%; max-width: 420px;">
             <div class="card-header">
-                <h3>用户注册</h3>
+                <h3>🔐 账号注册</h3>
             </div>
             <div class="card-body">
                 <input type="text" id="username" placeholder="请输入用户名">
-                <input type="password" id="password" placeholder="请输入密码">
-                <button class="btn-primary" id="registerBtn" style="width: 100%;">立即注册</button>
+                <input type="password" id="password" placeholder="请输入登录密码">
+                <!-- 新增密码确认框，提升注册体验 -->
+                <input type="password" id="confirmPwd" placeholder="请确认登录密码">
+                
+                <button class="btn-primary" id="registerBtn" style="width: 100%; margin-top:10px;">立即注册</button>
+                
                 <div class="tips" style="text-align: center; margin-top: 1rem; font-size: 0.9rem;">
-                    已有账号？<a href="index.html" style="color: #2563eb;">返回登录</a>
+                    已有账号？<a href="login.html" style="color: #2563eb; text-decoration:none;">前往登录</a>
                 </div>
             </div>
         </div>
@@ -50,10 +59,16 @@
 document.getElementById('registerBtn').onclick = async function() {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
+    const confirmPwd = document.getElementById("confirmPwd").value.trim();
 
     // 输入校验
-    if (!username || !password) {
-        alert("请填写完整信息！");
+    if (!username || !password || !confirmPwd) {
+        alert("请填写完整注册信息！");
+        return;
+    }
+    // 密码一致性校验
+    if (password !== confirmPwd) {
+        alert("两次输入的密码不一致！");
         return;
     }
 
@@ -62,7 +77,7 @@ document.getElementById('registerBtn').onclick = async function() {
     this.innerText = "注册中...";
 
     try {
-        // 后端注册接口（精准匹配）
+        // 后端注册接口（精准匹配，无改动）
         const res = await fetch("https://huanyuchain.pythonanywhere.com/api/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -71,13 +86,13 @@ document.getElementById('registerBtn').onclick = async function() {
         const result = await res.json();
 
         if (result.code === 200) {
-            alert("注册成功！请登录");
-            location.href = "index.html";
+            alert("✅ 注册成功！请登录账号");
+            location.href = "login.html";
         } else {
-            alert(result.msg || "注册失败");
+            alert(result.msg || "❌ 注册失败，用户名已存在");
         }
     } catch (error) {
-        alert("网络异常，请刷新重试");
+        alert("❌ 网络异常，请刷新重试");
         console.error(error);
     } finally {
         // 恢复按钮
@@ -86,11 +101,11 @@ document.getElementById('registerBtn').onclick = async function() {
     }
 }
 
-// 移动端菜单适配
+// 移动端菜单适配（全站统一）
 document.addEventListener("DOMContentLoaded", function () {
     const toggle = document.querySelector(".menu-toggle");
     const nav = document.querySelector("nav");
-    if (toggle) {
+    if (toggle && nav) {
         toggle.addEventListener("click", () => nav.classList.toggle("active"));
     }
 });
