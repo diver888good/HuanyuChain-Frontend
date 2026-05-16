@@ -1,5 +1,6 @@
 // ===================== 核心配置 =====================
-const API_BASE = "https://huanyuchain.pythonanywhere.com";
+// 🔥 修复：改为你本地启动的后端地址（前后端打通）
+const API_BASE = "http://10.0.5.125:8899";
 
 // ===================== 工具函数 =====================
 function getToken() { 
