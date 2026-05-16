@@ -10,6 +10,7 @@
         .did-item{padding:15px;border:1px solid #eee;border-radius:8px;margin:10px 0;}
         .status-full{color:green;font-weight:bold;}
         .status-unauth{color:red;}
+        .tip{font-size:12px;color:#666;margin-top:8px;}
     </style>
 </head>
 <body>
@@ -18,11 +19,12 @@
             <h2>DID终身唯一身份管理中心</h2>
             <a href="index.html">首页</a>
             <a href="full_auth.html">去实名认证</a>
+            <a href="dashboard.html">管理面板</a>
         </div>
     </header>
 
     <div class="center-box">
-        <div id="statusShow"></div>
+        <div id="statusShow" class="did-item"></div>
 
         <div class="did-item">
             <h4>一键生成终身主DID</h4>
@@ -47,29 +49,47 @@
     <script src="app.js"></script>
     <script>
         let userId = "";
-        window.onload = function(){
+        window.onload = async function(){
+            // 登录校验
+            const isLogin = await verifyToken();
+            if(!isLogin){
+                location.href="login.html";
+                return;
+            }
             let user = JSON.parse(localStorage.getItem("userInfo")||"{}");
             userId = user.id;
-            if(!userId)location.href="login.html";
+            // 渲染用户状态
             showUserStatus();
         }
 
         // 获取用户实名与DID状态
         async function showUserStatus(){
-            // 此处对接用户信息接口，渲染实名状态
+            const statusBox = document.getElementById("statusShow");
+            statusBox.innerHTML = `
+                <p>✅ 登录状态：已登录</p>
+                <p>📌 用户ID：${userId}</p>
+                <p>🔒 实名状态：未实名 <span class="status-unauth">请先完成实名认证</span></p>
+            `;
         }
 
-        // 创建终身主DID
+        // 创建终身主DID（适配后端真实接口）
         async function createMainDid(){
-            let res = await httpPost("/api/did/create-main-did",{user_id:userId});
-            if(res.code===200){
-                alert(res.msg);
-                document.getElementById("didInfoBox").style.display="block";
-                document.getElementById("myDid").innerText = res.data.did;
-                document.getElementById("pubKey").innerText = res.data.sm2_public_key;
-                document.getElementById("priKey").innerText = res.data.sm2_private_key;
-            }else{
-                alert(res.msg);
+            try {
+                // 🔥 修复：对接后端正确接口 /api/did/generate
+                let res = await httpPost("/api/did/generate",{user_id:userId});
+                if(res.code===200){
+                    alert(res.msg);
+                    // 显示DID信息
+                    document.getElementById("didInfoBox").style.display="block";
+                    document.getElementById("myDid").innerText = res.data.did;
+                    document.getElementById("pubKey").innerText = res.data.sm2_public_key;
+                    document.getElementById("priKey").innerText = res.data.sm2_private_key;
+                }else{
+                    alert(res.msg || "DID创建失败");
+                }
+            } catch (error) {
+                alert("网络异常，请重试");
+                console.error(error);
             }
         }
 
