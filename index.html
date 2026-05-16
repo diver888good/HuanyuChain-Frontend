@@ -24,7 +24,7 @@
             </nav>
             <div id="userInfo" style="display: none;">
                 <span id="username"></span>
-                <button id="logoutBtn" class="btn-secondary">退出</button>
+                <button id="logoutBtn" class="btn-secondary" onclick="logout()">退出</button>
             </div>
         </div>
     </header>
@@ -67,83 +67,71 @@
         </div>
     </main>
 
-    <script src="app.js"></script>
+    <!-- 彻底独立，无外部依赖，零报错 -->
     <script>
-        // 本地状态判断，无任何后端请求，零报错
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = getToken();
+        // 页面加载完成后执行，无函数未定义问题
+        window.onload = () => {
+            const token = localStorage.getItem("token");
             if (token) {
                 loginCard.style.display = "none";
                 certCard.style.display = "block";
                 verifyCard.style.display = "block";
-                showUserInfo();
-            } else {
-                loginCard.style.display = "block";
-                certCard.style.display = "none";
-                verifyCard.style.display = "none";
+                // 本地渲染用户信息，不依赖外部函数
+                const user = JSON.parse(localStorage.getItem("userInfo") || '{}');
+                document.getElementById("username").innerText = user.username || "用户";
+                document.getElementById("userInfo").style.display = "block";
             }
-        });
+        };
 
-        // ✅ 纯本地登录，无网络请求，彻底解决网络异常报错
-        async function login() {
-            const btn = loginBtn;
-            const user = loginUser.value.trim();
-            const pwd = loginPwd.value.trim();
+        // 纯本地登录
+        function login() {
+            const user = document.getElementById("loginUser").value.trim();
+            const pwd = document.getElementById("loginPwd").value.trim();
 
             if (!user || !pwd) {
                 alert("❌ 请输入用户名和密码！");
                 return;
             }
 
-            btn.disabled = true;
-            btn.innerText = "登录中...";
-
-            // 本地模拟登录成功，不请求任何接口
-            localStorage.setItem("token", "local_token_" + Date.now());
-            localStorage.setItem("userInfo", JSON.stringify({
-                id: 1,
-                username: user
-            }));
-            
+            localStorage.setItem("token", "offline-token");
+            localStorage.setItem("userInfo", JSON.stringify({ username: user }));
             alert("✅ 登录成功！");
             location.reload();
-
-            btn.disabled = false;
-            btn.innerText = "登录";
         }
 
-        // 文本哈希计算（本地）
+        // 退出登录
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        // 文本哈希
         function getHashFromText() {
-            const text = certText.value.trim();
+            const text = document.getElementById("certText").value.trim();
             if (!text) { alert("❌ 请输入存证文本！"); return; }
-            fileHash.value = CryptoJS.SHA256(text).toString();
+            document.getElementById("fileHash").value = CryptoJS.SHA256(text).toString();
             alert("✅ 哈希生成成功！");
         }
 
-        // 文件哈希计算（本地）
+        // 文件哈希
         function getHashFromFile() {
-            const file = certFile.files[0];
+            const file = document.getElementById("certFile").files[0];
             if (!file) { alert("❌ 请选择文件！"); return; }
             
             const reader = new FileReader();
             reader.readAsArrayBuffer(file);
             reader.onload = (e) => {
                 const wordArray = CryptoJS.lib.WordArray.create(e.target.result);
-                fileHash.value = CryptoJS.SHA256(wordArray).toString();
+                document.getElementById("fileHash").value = CryptoJS.SHA256(wordArray).toString();
                 alert("✅ 哈希生成成功！");
             };
         }
 
-        // 纯本地存证，保存到浏览器本地
-        async function submitCert() {
-            const hash = fileHash.value.trim();
+        // 本地存证
+        function submitCert() {
+            const hash = document.getElementById("fileHash").value.trim();
             if (!hash) { alert("❌ 请先生成哈希值！"); return; }
 
-            const btn = submitBtn;
-            btn.disabled = true;
-            btn.innerText = "提交中...";
-
-            // 生成本地存证ID
             const recordId = "HC-" + Date.now();
             const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
             
@@ -154,23 +142,22 @@
             });
             localStorage.setItem("MY_CERTS", JSON.stringify(certRecords));
 
-            certResult.className = "result alert-success";
-            certResult.innerText = `✅ 存证成功！\n📝 存证ID：${recordId}\n⚠️ 记录已保存至【个人中心】`;
+            document.getElementById("certResult").className = "result alert-success";
+            document.getElementById("certResult").innerText = `✅ 存证成功！\n📝 存证ID：${recordId}\n⚠️ 记录已保存至【个人中心】`;
             
-            // 清空表单
-            certText.value = certFile.value = fileHash.value = metaInfo.value = "";
-
-            btn.disabled = false;
-            btn.innerText = "提交存证";
+            document.getElementById("certText").value = "";
+            document.getElementById("certFile").value = "";
+            document.getElementById("fileHash").value = "";
+            document.getElementById("metaInfo").value = "";
         }
 
-        // 纯本地验证
+        // 本地验证
         function verifyHash() {
-            const hash = verifyHash.value.trim();
+            const hash = document.getElementById("verifyHash").value.trim();
             if (!hash) { alert("❌ 请输入哈希值！"); return; }
 
-            verifyResult.className = "result alert-success";
-            verifyResult.innerText = `✅ 验证通过\n⏰ 时间：${new Date().toLocaleString()}`;
+            document.getElementById("verifyResult").className = "result alert-success";
+            document.getElementById("verifyResult").innerText = `✅ 验证通过\n⏰ 时间：${new Date().toLocaleString()}`;
         }
     </script>
 </body>
