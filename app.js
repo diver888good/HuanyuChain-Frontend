@@ -1,5 +1,4 @@
 // ===================== 核心配置 =====================
-// 🔥 修复：改为你本地启动的后端地址（前后端打通）
 const API_BASE = "https://huanyuchain.pythonanywhere.com";
 
 // ===================== 工具函数 =====================
@@ -10,21 +9,18 @@ function getUsername() {
     return localStorage.getItem("username") || ""; 
 }
 
-// ===================== 页面初始化（全局自动执行） =====================
+// ===================== 页面初始化 =====================
 document.addEventListener("DOMContentLoaded", function () {
-    // 移动端菜单适配
     const toggle = document.querySelector(".menu-toggle");
     const nav = document.querySelector("nav");
     if (toggle && nav) {
         toggle.addEventListener("click", () => nav.classList.toggle("active"));
     }
-    // 渲染用户登录状态
     initUserInfo();
-    // 绑定退出登录事件
     bindLogoutEvent();
 });
 
-// ===================== 渲染登录用户信息 =====================
+// ===================== 渲染用户信息 =====================
 function initUserInfo() {
     const userInfoDom = document.getElementById("userInfo");
     const usernameDom = document.getElementById("username");
@@ -53,7 +49,7 @@ function bindLogoutEvent() {
     }
 }
 
-// ===================== 登录校验（所有页面通用） =====================
+// ===================== 登录校验 =====================
 async function verifyToken() {
     const token = getToken();
     if (!token) {
@@ -64,54 +60,59 @@ async function verifyToken() {
     return true;
 }
 
-// ===================== 统一网络请求（修复版·无冲突） =====================
-/**
- * 通用POST请求（全接口兼容）
- * @param {string} url - 接口路径 例：/api/auth/full-real-auth
- * @param {object} data - 请求参数
- */
+// ===================== 🔥 修复网络异常/跨域 =====================
 async function httpPost(url, data = {}) {
     try {
+        const headers = {
+            "Content-Type": "application/json",
+        };
+        // 仅登录后携带Token，避免空值报错
+        const token = getToken();
+        if (token) {
+            headers["Authorization"] = "Bearer " + token;
+        }
+
         const res = await fetch(API_BASE + url, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + getToken()
-            },
-            body: JSON.stringify(data)
+            headers: headers,
+            body: JSON.stringify(data),
+            mode: 'cors', // 强制开启跨域，解决浏览器拦截
         });
-        // 兼容非JSON响应，防止报错
+
         try {
             return await res.json();
         } catch {
             return { code: 500, msg: "服务器响应异常" };
         }
     } catch (err) {
-        console.error("请求异常：", err);
-        alert("网络异常，请检查服务");
+        console.error("请求错误：", err);
+        alert("网络异常，请检查服务是否启动");
         return { code: 500, msg: "网络请求失败" };
     }
 }
 
-/**
- * 通用GET请求
- * @param {string} url - 接口路径
- */
 async function httpGet(url) {
     try {
+        const headers = {};
+        const token = getToken();
+        if (token) {
+            headers["Authorization"] = "Bearer " + token;
+        }
+
         const res = await fetch(API_BASE + url, {
-            headers: {
-                "Authorization": "Bearer " + getToken()
-            }
+            method: "GET",
+            headers: headers,
+            mode: 'cors', // 强制跨域
         });
+
         try {
             return await res.json();
         } catch {
             return { code: 500, msg: "服务器响应异常" };
         }
     } catch (err) {
-        console.error("请求异常：", err);
-        alert("网络异常，请检查服务");
+        console.error("请求错误：", err);
+        alert("网络异常，请检查服务是否启动");
         return { code: 500, msg: "网络请求失败" };
     }
 }
