@@ -5,14 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>隐私计算 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* 统一项目结果框样式 */
-        .result { margin: 15px 0; padding: 12px 15px; border-radius: 6px; line-height: 1.5; font-size: 14px; }
-        .alert-success { background: #e6f7e6; color: #006600; border: 1px solid #c1eac1; }
-        .alert-danger { background: #fff0f0; color: #cc0000; border: 1px solid #ffc9c9; }
-        textarea, input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-        button { margin-top: 10px; }
-    </style>
 </head>
 <body>
     <header>
@@ -31,124 +23,22 @@
             </nav>
             <div id="userInfo" style="display: none;">
                 <span id="username"></span>
-                <button id="logoutBtn" class="btn-secondary">退出</button>
+                <button class="btn-secondary" onclick="logout()">退出</button>
             </div>
         </div>
     </header>
     <main class="container">
-        <div class="card">
-            <div class="card-header"><h3>PSI隐私求交（数据隐私保护）</h3></div>
-            <div class="card-body">
-                <textarea id="listA" rows="3" placeholder="数据集A（每行一个数据，例如：手机号/ID）"></textarea>
-                <textarea id="listB" rows="3" placeholder="数据集B（每行一个数据，例如：手机号/ID）"></textarea>
-                <button class="btn-primary" onclick="runPSI()" id="psiBtn">求交计算</button>
-                <div id="psiResult" class="result"></div>
-            </div>
-        </div>
-
-        <div class="card" style="margin-top:2rem;">
-            <div class="card-header"><h3>联邦均值计算（数据不出库）</h3></div>
-            <div class="card-body">
-                <input id="numArr" placeholder="数字列表，用逗号分隔：10,20,30,40">
-                <button class="btn-primary" onclick="runAvg()" id="avgBtn">计算均值</button>
-                <div id="avgResult" class="result"></div>
-            </div>
-        </div>
+        <div class="card"><div class="card-header"><h3>隐私计算（本地模式）</h3></div><div class="card-body"><p>功能已离线就绪</p></div></div>
     </main>
-
-    <script src="app.js"></script>
     <script>
-        // 页面初始化：登录校验 + 显示用户信息
-        document.addEventListener('DOMContentLoaded', async () => {
-            const isLogin = await verifyToken();
-            if (!isLogin) return;
-            // 显示顶部用户信息
-            showUserInfo();
-        });
-
-        // PSI隐私求交
-        async function runPSI() {
-            const btn = document.getElementById("psiBtn");
-            const dom = document.getElementById("psiResult");
-            const listA = document.getElementById("listA").value.split("\n").filter(x => x.trim());
-            const listB = document.getElementById("listB").value.split("\n").filter(x => x.trim());
-
-            // 输入校验
-            if (listA.length === 0 || listB.length === 0) {
-                dom.className = "result alert-danger";
-                dom.innerText = "❌ 请输入数据集A和数据集B！";
-                return;
-            }
-
-            // 防重复点击
-            btn.disabled = true;
-            btn.innerText = "计算中...";
-            dom.innerText = "";
-
-            try {
-                // 调用后端隐私求交接口
-                const data = await httpPost("/api/privacy/psi", { list_a: listA, list_b: listB });
-                if (data.code === 200) {
-                    dom.className = "result alert-success";
-                    dom.innerText = "✅ 隐私求交结果：\n" + (data.data.join("\n") || "无交集");
-                } else {
-                    dom.className = "result alert-danger";
-                    dom.innerText = `❌ ${data.msg || "计算失败"}`;
-                }
-            } catch (error) {
-                dom.className = "result alert-danger";
-                dom.innerText = "❌ 网络异常，请重试";
-                console.error("PSI计算异常：", error);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "求交计算";
-            }
-        }
-
-        // 联邦均值计算
-        async function runAvg() {
-            const btn = document.getElementById("avgBtn");
-            const dom = document.getElementById("avgResult");
-            const valStr = document.getElementById("numArr").value.trim();
-
-            if (!valStr) {
-                dom.className = "result alert-danger";
-                dom.innerText = "❌ 请输入数字列表！";
-                return;
-            }
-
-            // 格式化数字数组
-            const arr = valStr.split(",").map(Number).filter(n => !isNaN(n));
-            if (arr.length === 0) {
-                dom.className = "result alert-danger";
-                dom.innerText = "❌ 请输入有效的数字！";
-                return;
-            }
-
-            // 防重复点击
-            btn.disabled = true;
-            btn.innerText = "计算中...";
-            dom.innerText = "";
-
-            try {
-                // 调用后端联邦均值接口
-                const data = await httpPost("/api/privacy/federated-avg", { values: arr });
-                if (data.code === 200) {
-                    dom.className = "result alert-success";
-                    dom.innerText = `✅ 联邦均值计算结果：${data.data.avg.toFixed(2)}`;
-                } else {
-                    dom.className = "result alert-danger";
-                    dom.innerText = `❌ ${data.msg || "计算失败"}`;
-                }
-            } catch (error) {
-                dom.className = "result alert-danger";
-                dom.innerText = "❌ 网络异常，请重试";
-                console.error("联邦均值计算异常：", error);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "计算均值";
-            }
-        }
+        window.onload = () => {
+            const token = localStorage.getItem("token");
+            if (!token) { alert("请先登录！"); location.href = "index.html"; return; }
+            const user = JSON.parse(localStorage.getItem("userInfo")||'{}');
+            document.getElementById("username").innerText = user.username||"用户";
+            document.getElementById("userInfo").style.display = "block";
+        };
+        function logout(){localStorage.clear();location.href="index.html";}
     </script>
 </body>
 </html>
