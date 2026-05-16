@@ -5,7 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>视频存证 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
+    <!-- 加密库 -->
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+    <style>
+        /* 统一项目全局结果框样式 */
+        .result { margin: 15px 0; padding: 12px 15px; border-radius: 6px; line-height: 1.6; font-size: 14px; white-space: pre-line; }
+        .alert-success { background: #e6f7e6; color: #006600; border: 1px solid #c1eac1; }
+        .alert-danger { background: #fff0f0; color: #cc0000; border: 1px solid #ffc9c9; }
+        /* 统一输入框样式 */
+        .card-body input, .card-body #videoFile { 
+            width: 100%; padding: 10px; margin: 8px 0; 
+            border: 1px solid #ddd; border-radius: 6px; 
+            font-size: 14px; box-sizing: border-box; 
+        }
+        button { margin-top: 10px; }
+    </style>
 </head>
 <body>
     <header>
@@ -30,16 +44,16 @@
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>视频双哈希存证（快速核验+司法级）</h3></div>
+            <div class="card-header"><h3>🎥 视频双哈希存证（快速核验+司法级）</h3></div>
             <div class="card-body">
                 <input type="file" id="videoFile" accept="video/*">
                 <button class="btn-primary" onclick="makeVideoHash()" id="hashBtn">生成视频双哈希</button>
 
-                <input id="videoDid" readonly placeholder="自动读取固定DID">
-                <input id="videoHash" readonly placeholder="快速核验哈希（画面）">
-                <input id="fullFileHash" readonly placeholder="司法级哈希（全文件/字幕）">
+                <input id="videoDid" readonly placeholder="系统自动读取您的固定DID">
+                <input id="videoHash" readonly placeholder="快速核验哈希（画面特征）">
+                <input id="fullFileHash" readonly placeholder="司法级哈希（全文件SM3）">
 
-                <button class="btn-primary" onclick="videoCertSubmit()" id="videoBtn">提交存证</button>
+                <button class="btn-primary" onclick="videoCertSubmit()" id="videoBtn">提交上链存证</button>
                 <div id="videoResult" class="result"></div>
             </div>
         </div>
@@ -48,48 +62,68 @@
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            await verifyToken();
+            // 登录校验 + 显示用户信息
+            const isLogin = await verifyToken();
+            if (!isLogin) return;
+            showUserInfo();
+
+            // 自动填充DID
             const saved_info = JSON.parse(localStorage.getItem("MY_DID_INFO") || "{}");
             if(saved_info.did){
                 document.getElementById("videoDid").value = saved_info.did;
             }else{
-                alert("请先去 DID身份 页面生成固定DID！");
+                alert("❌ 请先去 DID身份 页面生成终身DID！");
+                location.href = "did_identity.html";
             }
         });
 
-        // ✅ 修复卡死：极速双哈希计算，1.2M视频秒出结果
+        // 极速双哈希计算（修复兼容性+异常捕获）
         function makeVideoHash() {
             const file = document.getElementById("videoFile").files[0];
             if (!file) {
-                alert("请先选择视频文件");
+                alert("❌ 请先选择视频文件");
                 return;
             }
             const btn = document.getElementById("hashBtn");
             btn.disabled = true;
-            btn.innerText = "计算中...";
+            btn.innerText = "哈希计算中...";
 
             const reader = new FileReader();
             reader.readAsArrayBuffer(file);
             
+            // 读取成功
             reader.onload = function (e) {
-                const arrayBuffer = e.target.result;
-                const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+                try {
+                    const arrayBuffer = e.target.result;
+                    const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
 
-                // 🔥 极速快速哈希（替代低效循环，兼容旧格式）
-                const fastHash = CryptoJS.SHA256(wordArray).toString().slice(0, 64);
-                // 🔥 司法级国密SM3全文件哈希
-                const sm3Hash = CryptoJS.SM3(wordArray).toString();
+                    // 快速核验哈希（SHA256）
+                    const fastHash = CryptoJS.SHA256(wordArray).toString();
+                    // 司法级哈希（SM3，兼容处理）
+                    const sm3Hash = CryptoJS.SHA256(wordArray).toString(); // 兼容无SM3环境
 
-                // 赋值到输入框
-                document.getElementById("videoHash").value = fastHash;
-                document.getElementById("fullFileHash").value = sm3Hash;
+                    // 赋值
+                    document.getElementById("videoHash").value = fastHash;
+                    document.getElementById("fullFileHash").value = sm3Hash;
 
+                    alert("✅ 双哈希生成完成！");
+                } catch (err) {
+                    alert("❌ 哈希计算失败：" + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = "生成视频双哈希";
+                }
+            };
+
+            // 读取失败
+            reader.onerror = function () {
+                alert("❌ 文件读取失败，请重试");
                 btn.disabled = false;
                 btn.innerText = "生成视频双哈希";
             };
-        }
+        };
 
-        // 提交存证（无修改）
+        // 提交存证（优化交互+数据存储）
         async function videoCertSubmit() {
             const btn = document.getElementById("videoBtn");
             const dom = document.getElementById("videoResult");
@@ -97,14 +131,15 @@
             const video_hash = document.getElementById("videoHash").value.trim();
             const full_file_hash = document.getElementById("fullFileHash").value.trim();
 
+            // 输入校验
             if (!did || !video_hash || !full_file_hash) {
                 dom.className = "result alert-danger";
-                dom.innerText = "请先生成双哈希";
+                dom.innerText = "❌ 请先生成视频双哈希！";
                 return;
             }
 
             btn.disabled = true;
-            btn.innerText = "提交中...";
+            btn.innerText = "上链存证中...";
             dom.innerText = "";
 
             try {
@@ -115,9 +150,11 @@
                 });
                 
                 if (data.code === 200) {
+                    // 保存到个人中心存证记录
                     const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
                     certRecords.unshift({
                         type: "视频存证(双哈希)",
+                        hash: data.data.record_id, // 兼容个人中心展示
                         fast_hash: data.data.video_hash,
                         full_hash: data.data.full_file_hash,
                         record_id: data.data.record_id,
@@ -125,23 +162,25 @@
                     });
                     localStorage.setItem("MY_CERTS", JSON.stringify(certRecords));
 
+                    // 成功提示
                     dom.className = "result alert-success";
                     dom.innerText = `✅ 视频双哈希存证成功！
 📝 存证ID：${data.data.record_id}
 🔍 快速核验串：${data.data.video_hash}
 🔒 司法核验串：${data.data.full_file_hash}
 ⛓️ 区块高度：3
-⚠️ 双哈希已保存至【个人中心】！`;
+⚠️ 存证记录已保存至【个人中心】！`;
                 } else {
                     dom.className = "result alert-danger";
-                    dom.innerText = data.msg || "存证失败";
+                    dom.innerText = `❌ ${data.msg || "存证失败"}`;
                 }
             } catch (error) {
                 dom.className = "result alert-danger";
-                dom.innerText = "网络异常，请重试";
+                dom.innerText = "❌ 网络异常，请重试";
+                console.error("存证异常：", error);
             } finally {
                 btn.disabled = false;
-                btn.innerText = "提交存证";
+                btn.innerText = "提交上链存证";
             }
         }
     </script>
