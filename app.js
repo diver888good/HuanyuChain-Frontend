@@ -55,28 +55,25 @@ async function verifyToken() {
     return true;
 }
 
-// ===================== 终极网络请求（跨域100%修复） =====================
+// ===================== 🔥 终极修复：纯JWT跨域请求 =====================
 async function httpPost(url, data = {}) {
     try {
         const headers = { "Content-Type": "application/json" };
         const token = getToken();
-        if (token) {
-            headers["Authorization"] = "Bearer " + token;
-        }
+        if (token) headers["Authorization"] = "Bearer " + token;
 
         const response = await fetch(API_BASE + url, {
             method: "POST",
             headers: headers,
             body: JSON.stringify(data),
-            mode: "cors",
-            // 🔥 匹配后端CORS配置，解决最后一道拦截
-            credentials: "include"
+            mode: "cors"
+            // 🔥 关键：删除 credentials，这是报错元凶！
         });
 
         return await response.json();
     } catch (error) {
-        console.error("请求错误：", error);
-        alert("网络异常，请检查后端服务是否启动");
+        console.error(error);
+        alert("网络异常，请检查服务");
         return { code: 500, msg: "请求失败" };
     }
 }
@@ -85,22 +82,19 @@ async function httpGet(url) {
     try {
         const headers = {};
         const token = getToken();
-        if (token) {
-            headers["Authorization"] = "Bearer " + token;
-        }
+        if (token) headers["Authorization"] = "Bearer " + token;
 
         const response = await fetch(API_BASE + url, {
             method: "GET",
             headers: headers,
-            mode: "cors",
-            // 🔥 匹配后端CORS配置
-            credentials: "include"
+            mode: "cors"
+            // 🔥 关键：删除 credentials
         });
 
         return await response.json();
     } catch (error) {
-        console.error("请求错误：", error);
-        alert("网络异常，请检查后端服务是否启动");
+        console.error(error);
+        alert("网络异常，请检查服务");
         return { code: 500, msg: "请求失败" };
     }
 }
