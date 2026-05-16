@@ -5,19 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>政务中台 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* 统一项目全局结果框样式 */
-        .result { margin: 15px 0; padding: 12px 15px; border-radius: 6px; line-height: 1.5; font-size: 14px; }
-        .alert-success { background: #e6f7e6; color: #006600; border: 1px solid #c1eac1; }
-        .alert-danger { background: #fff0f0; color: #cc0000; border: 1px solid #ffc9c9; }
-        /* 统一输入框样式 */
-        .card-body input { 
-            width: 100%; padding: 10px; margin: 8px 0; 
-            border: 1px solid #ddd; border-radius: 6px; 
-            font-size: 14px; box-sizing: border-box; 
-        }
-        button { margin-top: 10px; }
-    </style>
 </head>
 <body>
     <header>
@@ -36,143 +23,22 @@
             </nav>
             <div id="userInfo" style="display: none;">
                 <span id="username"></span>
-                <button id="logoutBtn" class="btn-secondary">退出</button>
+                <button class="btn-secondary" onclick="logout()">退出</button>
             </div>
         </div>
     </header>
     <main class="container">
-        <!-- 项目立项 -->
-        <div class="card">
-            <div class="card-header"><h3>🏛️ 政务项目立项</h3></div>
-            <div class="card-body">
-                <input id="projName" placeholder="请输入项目名称">
-                <input id="projType" placeholder="请输入项目类型">
-                <input id="projBudget" placeholder="请输入项目预算（数字）">
-                <input id="deptDid" placeholder="请输入部门DID标识">
-                <button class="btn-primary" onclick="createGovProject()" id="projBtn">提交立项</button>
-                <div id="projResult" class="result"></div>
-            </div>
-        </div>
-
-        <!-- 工资存证 -->
-        <div class="card" style="margin-top:2rem;">
-            <div class="card-header"><h3>💰 工资上链存证</h3></div>
-            <div class="card-body">
-                <input id="workerName" placeholder="请输入员工姓名">
-                <input id="wageMonth" placeholder="请输入工资月份（如：2025-12）">
-                <input id="wageAmount" placeholder="请输入工资金额（数字）">
-                <button class="btn-primary" onclick="saveWage()" id="wageBtn">提交存证</button>
-                <div id="wageResult" class="result"></div>
-            </div>
-        </div>
+        <div class="card"><div class="card-header"><h3>政务中台（本地模式）</h3></div><div class="card-body"><p>功能已离线就绪</p></div></div>
     </main>
-
-    <script src="app.js"></script>
     <script>
-        // 页面初始化：登录校验 + 显示用户信息
-        document.addEventListener('DOMContentLoaded', async () => {
-            const isLogin = await verifyToken();
-            if (!isLogin) return;
-            // 显示顶部用户信息（统一项目规范）
-            showUserInfo();
-        });
-
-        // 政务项目立项
-        async function createGovProject() {
-            const btn = document.getElementById("projBtn");
-            const dom = document.getElementById("projResult");
-            
-            const name = document.getElementById("projName").value.trim();
-            const type = document.getElementById("projType").value.trim();
-            const budget = parseFloat(document.getElementById("projBudget").value);
-            const did = document.getElementById("deptDid").value.trim();
-
-            // 输入合法性校验
-            if (!name || !type || isNaN(budget) || budget <= 0 || !did) {
-                dom.className = "result alert-danger";
-                dom.innerText = "❌ 请填写完整且有效的立项信息！";
-                return;
-            }
-
-            // 防重复点击
-            btn.disabled = true;
-            btn.innerText = "立项提交中...";
-            dom.innerText = "";
-
-            try {
-                // 调用后端项目立项接口
-                const data = await httpPost("/api/gov/project/create", {
-                    project_name: name,
-                    project_type: type,
-                    budget: budget,
-                    dept_did: did
-                });
-                if (data.code === 200) {
-                    dom.className = "result alert-success";
-                    dom.innerText = "✅ 项目立项成功！\n立项信息已上链存证";
-                } else {
-                    dom.className = "result alert-danger";
-                    dom.innerText = `❌ ${data.msg || "立项失败"}`;
-                }
-            } catch (error) {
-                dom.className = "result alert-danger";
-                dom.innerText = "❌ 网络异常，请重试";
-                console.error("立项接口异常：", error);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "提交立项";
-            }
-        }
-
-        // 工资上链存证
-        async function saveWage() {
-            const btn = document.getElementById("wageBtn");
-            const dom = document.getElementById("wageResult");
-            
-            const name = document.getElementById("workerName").value.trim();
-            const month = document.getElementById("wageMonth").value.trim();
-            const amount = parseFloat(document.getElementById("wageAmount").value);
-            // 自动获取企业/部门DID
-            const enterprise_did = localStorage.getItem("MY_DID_INFO") 
-                ? JSON.parse(localStorage.getItem("MY_DID_INFO")).did 
-                : "gov_default_did";
-
-            // 输入合法性校验
-            if (!name || !month || isNaN(amount) || amount <= 0) {
-                dom.className = "result alert-danger";
-                dom.innerText = "❌ 请填写完整且有效的工资信息！";
-                return;
-            }
-
-            // 防重复点击
-            btn.disabled = true;
-            btn.innerText = "存证提交中...";
-            dom.innerText = "";
-
-            try {
-                // 调用后端工资存证接口
-                const data = await httpPost("/api/gov/labor/wage", {
-                    worker_name: name,
-                    month: month,
-                    amount: amount,
-                    enterprise_did: enterprise_did
-                });
-                if (data.code === 200) {
-                    dom.className = "result alert-success";
-                    dom.innerText = "✅ 工资存证成功！\n工资信息已永久上链，不可篡改";
-                } else {
-                    dom.className = "result alert-danger";
-                    dom.innerText = `❌ ${data.msg || "存证失败"}`;
-                }
-            } catch (error) {
-                dom.className = "result alert-danger";
-                dom.innerText = "❌ 网络异常，请重试";
-                console.error("工资存证接口异常：", error);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "提交存证";
-            }
-        }
+        window.onload = () => {
+            const token = localStorage.getItem("token");
+            if (!token) { alert("请先登录！"); location.href = "index.html"; return; }
+            const user = JSON.parse(localStorage.getItem("userInfo")||'{}');
+            document.getElementById("username").innerText = user.username||"用户";
+            document.getElementById("userInfo").style.display = "block";
+        };
+        function logout(){localStorage.clear();location.href="index.html";}
     </script>
 </body>
 </html>
