@@ -55,7 +55,7 @@ async function verifyToken() {
     return true;
 }
 
-// ===================== 🔥 终极修复：纯JWT跨域请求 =====================
+// ===================== 网络请求（最简跨域版） =====================
 async function httpPost(url, data = {}) {
     try {
         const headers = { "Content-Type": "application/json" };
@@ -67,12 +67,11 @@ async function httpPost(url, data = {}) {
             headers: headers,
             body: JSON.stringify(data),
             mode: "cors"
-            // 🔥 关键：删除 credentials，这是报错元凶！
         });
 
         return await response.json();
     } catch (error) {
-        console.error(error);
+        console.error("请求错误：", error);
         alert("网络异常，请检查服务");
         return { code: 500, msg: "请求失败" };
     }
@@ -88,12 +87,11 @@ async function httpGet(url) {
             method: "GET",
             headers: headers,
             mode: "cors"
-            // 🔥 关键：删除 credentials
         });
 
         return await response.json();
     } catch (error) {
-        console.error(error);
+        console.error("请求错误：", error);
         alert("网络异常，请检查服务");
         return { code: 500, msg: "请求失败" };
     }
