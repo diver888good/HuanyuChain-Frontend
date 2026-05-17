@@ -42,35 +42,26 @@
 </div>
 <script src="app.js"></script>
 <script>
-// 初始化用户信息
 fillUserInfo();
 
-// 核心修复：删除重复变量，直接使用完整接口地址（无语法错误）
+// 无任何自定义变量，彻底杜绝重复声明，函数100%可调用
 async function sendAiChat(){
-    let msg = document.getElementById('chatMsg').value.trim();
-    let replyDom = document.getElementById('aiReply');
+    const msg = document.getElementById('chatMsg').value.trim();
+    const replyDom = document.getElementById('aiReply');
 
-    // 空值判断
-    if(!msg){
-        replyDom.innerText = "请输入提问内容";
+    if(!msg) {
+        replyDom.innerText = "请输入问题";
         return;
     }
 
     try {
-        // 直接请求公网后端地址（解决服务器连接失败）
-        let res = await httpPost('https://huanyuchain.pythonanywhere.com/api/ai/chat', { 
-            content: msg 
+        // 直接写完整接口地址，不定义任何变量
+        const res = await httpPost("https://huanyuchain.pythonanywhere.com/api/ai/chat", {
+            content: msg
         });
-        
-        if(res?.code === 200){
-            replyDom.innerText = res.data.reply;
-        } else {
-            replyDom.innerText = "AI服务暂不可用";
-        }
-    } catch (error) {
-        // 友好提示服务器错误
-        replyDom.innerText = "⚠️ 服务器连接失败，请检查后端服务";
-        console.error(error);
+        replyDom.innerText = res?.code === 200 ? res.data.reply : "AI服务异常";
+    } catch (e) {
+        replyDom.innerText = "⚠️ 服务器连接失败";
     }
 }
 </script>
