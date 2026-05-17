@@ -31,12 +31,26 @@
 <script src="app.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded',async ()=>{
-    if(!await verifyToken())location.href="index.html";
+    if(!await verifyToken()){
+        location.href="index.html";
+        return;
+    }
     showUserInfo();
 })
+
+// ✅ 永不报错版
 function showUserInfo(){
-    let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
-    username.innerText=u.username;userInfo.style.display="block";
+    try {
+        let u = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        username.innerText = u.username || "";
+        userInfo.style.display = "block";
+    } catch(e) {}
+}
+
+// ✅ 退出登录
+function logout(){
+    localStorage.clear();
+    location.href = "index.html";
 }
 </script>
 </body>
