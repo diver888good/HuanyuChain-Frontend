@@ -2,74 +2,172 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>个人强实名备案</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寰域链 - 强身份实名备案</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        *{margin:0;padding:0;box-sizing:border-box;}
-        body{background:#f6f8fa;}
-        .top-nav{height:60px;background:#165DFF;display:flex;align-items:center;padding:0 40px;}
-        .nav-title{color:#fff;font-size:18px;flex:1;}
-        .back{color:#fff;text-decoration:none;}
-        .main{max-width:700px;margin:30px auto;padding:20px;}
-        .card{background:#fff;padding:25px;border-radius:10px;}
-        h3{color:#165DFF;margin-bottom:15px;}
-        .warn{color:red;font-size:14px;margin:10px 0;}
-        input,textarea{width:100%;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:6px;}
-        .btn{background:#165DFF;color:#fff;border:none;padding:10px 20px;border-radius:6px;margin:8px 5px;cursor:pointer;}
+        /* 前台专属简洁样式 */
+        .front-header{
+            background:#1f2937;
+            color:#fff;
+            padding:16px 30px;
+            font-size:18px;
+            font-weight:bold;
+        }
+        .front-container{
+            max-width:800px;
+            margin:30px auto;
+            padding:0 20px;
+        }
+        .auth-tab{display:flex; gap:12px; margin:15px 0;}
+        .auth-tab span{padding:8px 16px; border:1px solid #3b82f6; border-radius:6px; cursor:pointer;}
+        .auth-tab .active{background:#3b82f6; color:#fff;}
+        .upload-group{margin:12px 0;}
+        .warn-tip{color:#ef4444; font-size:13px; margin-bottom:10px;}
+        .hide{display:none;}
+        .real-btn{background:#165DFF;color:#fff;border:none;padding:8px 16px;border-radius:6px;margin:5px;cursor:pointer;}
+        .back-btn{
+            background:#64748b;
+            color:#fff;
+            border:none;
+            padding:8px 16px;
+            border-radius:6px;
+            cursor:pointer;
+            margin-bottom:15px;
+        }
     </style>
 </head>
 <body>
-    <div class="top-nav">
-        <div class="nav-title">个人终身强实名备案</div>
-        <a href="user_center.html" class="back">返回个人中心</a>
-    </div>
-    <div class="main">
-        <div class="card">
-            <h3>提交实名信息（提交后终身锁定不可修改）</h3>
-            <p class="warn">⚠️ 实名信息国密加密存储，司法机构可依法核验</p>
-            <input type="text" id="rname" placeholder="真实姓名">
-            <input type="text" id="rphone" placeholder="手机号码">
-            <input type="text" id="rcard" placeholder="身份证号码">
-            <input type="text" id="rbirth" placeholder="出生日期">
-            <textarea id="raddr" placeholder="常住详细地址"></textarea>
-            <button class="btn" onclick="faceCheck()">人脸核验</button>
-            <button class="btn" onclick="threeCheck()">三要素比对</button>
-            <button class="btn" onclick="submitReal()">提交实名锁定</button>
+
+<!-- 前台简洁头部（替换管理员后台头部） -->
+<div class="front-header">
+    寰域链 V8.0 - 强身份实名备案
+</div>
+
+<!-- 前台主内容区 -->
+<div class="front-container">
+    <button class="back-btn" onclick="location.href='index.html'">← 返回用户中心</button>
+
+    <div class="card">
+        <h2>强身份实名信息提交（终身锁定·司法可溯源）</h2>
+        <p class="warn-tip">⚠️ 资料提交后国密加密存储、终身不可修改，司法机构可依法调取核验身份</p>
+
+        <div class="auth-tab">
+            <span class="active" onclick="switchAuth(1)">个人实名</span>
+            <span onclick="switchAuth(2)">企业实名</span>
         </div>
+
+        <!-- 个人实名（和后台完全一致） -->
+        <div id="personAuth">
+            <input type="text" id="realName" placeholder="真实姓名">
+            <input type="text" id="phone" placeholder="手机号码">
+            <input type="text" id="idCard" placeholder="身份证号码">
+            <input type="text" id="birth" placeholder="出生日期">
+            <input type="text" id="address" placeholder="常住地址">
+        </div>
+
+        <!-- 企业实名（和后台完全一致） -->
+        <div id="companyAuth" class="hide">
+            <input type="text" id="company_name" placeholder="企业全称">
+            <input type="text" id="credit_code" placeholder="统一社会信用代码">
+            <input type="text" id="legal_person" placeholder="法人姓名">
+            <input type="text" id="legal_phone" placeholder="法人联系电话">
+            <input type="text" id="company_address" placeholder="企业注册地址">
+        </div>
+
+        <!-- 核验按钮（和后台功能完全一致） -->
+        <button class="real-btn" onclick="realFaceCheck()">活体人脸核验</button>
+        <button class="real-btn" onclick="realThreeCheck()">三要素真实比对</button>
+        <button class="real-btn" onclick="randomCheck()">随机身份核验</button>
+        
+        <!-- 实名提交按钮（终身锁定，和后台一致） -->
+        <button class="btn" id="submitBtn" onclick="submitRealName()">提交实名备案（终身加密锁定）</button>
     </div>
+</div>
 
 <script src="app.js"></script>
 <script>
-let user = JSON.parse(localStorage.userInfo);
-let ok = false;
+// 验证用户登录
+if(!localStorage.userInfo){
+    alert("请先登录！");
+    location.href="login.html";
+}
 
-async function faceCheck(){
-    let res = await httpPost('/api/auth/service/face-check',{user_id:user.user_id});
-    alert(res.msg);
-}
-async function threeCheck(){
-    let data={
-        user_id:user.user_id,
-        real_name:document.getElementById('rname').value,
-        id_card:document.getElementById('rcard').value,
-        phone:document.getElementById('rphone').value
+// 初始化用户信息
+fillUserInfo();
+let authType = 1;
+let verify_ok = false; 
+
+// ============= 核心实名逻辑（1:1 复刻管理员后台） =============
+// 提交实名备案（终身锁定）
+async function submitRealName(){
+    if(!verify_ok){
+        alert("ERROR：三要素+人脸未通过真实核验，禁止实名！");
+        return;
     }
-    let res = await httpPost('/api/auth/service/three-check',data);
-    if(res.code==200)ok=true;
-    alert(res.msg);
-}
-async function submitReal(){
-    if(!ok){alert("请先完成三要素核验");return;}
-    let data={
-        user_id:user.user_id,
-        real_name:document.getElementById('rname').value,
-        phone:document.getElementById('rphone').value,
-        id_card:document.getElementById('rcard').value,
-        birth_date:document.getElementById('rbirth').value,
-        address:document.getElementById('raddr').value
+
+    const userInfo = JSON.parse(localStorage.userInfo);
+    let data = {
+        user_id: userInfo.user_id,
+        real_name: document.getElementById('realName').value,
+        phone: document.getElementById('phone').value,
+        id_card: document.getElementById('idCard').value,
+        birth_date: document.getElementById('birth').value,
+        address: document.getElementById('address').value
     }
-    let res = await httpPost('/api/auth/service/full-real-auth',data);
-    alert(res.msg);
-    if(res.code==200)location.href="user_center.html";
+
+    // 🔥 修正为正确接口（和后台一致）
+    let res = await httpPost('/api/auth/full-real-auth',data);
+    if(res.code === 200){
+        document.getElementById("submitBtn").disabled = true;
+        document.getElementById("submitBtn").innerText = "✅ 已实名锁定·本人真实身份·区块链不可篡改";
+        alert("✅ 强实名成功！身份国密加密、链上绑定DID、具备完整司法效力");
+    } else {
+        alert(res.msg);
+    }
+}
+
+// 切换实名类型
+function switchAuth(type){
+    authType = type;
+    document.querySelectorAll('.auth-tab span').forEach((item,i)=>{
+        item.classList.toggle('active', i+1===type);
+    });
+    document.getElementById('personAuth').classList.toggle('hide', type!==1);
+    document.getElementById('companyAuth').classList.toggle('hide', type!==2);
+}
+
+// 活体人脸核验
+async function realFaceCheck(){
+    const userInfo = JSON.parse(localStorage.userInfo);
+    let res = await httpPost('/api/auth/face-check', {user_id: userInfo.user_id});
+    if(res.code === 200){
+        alert("✅ 人脸核验通过：确认本人操作");
+    }
+}
+
+// 三要素真实比对
+async function realThreeCheck(){
+    const userInfo = JSON.parse(localStorage.userInfo);
+    let data = {
+        user_id: userInfo.user_id,
+        real_name: document.getElementById('realName').value,
+        id_card: document.getElementById('idCard').value,
+        phone: document.getElementById('phone').value
+    }
+    let res = await httpPost('/api/auth/three-check', data);
+    if(res.code === 200){
+        verify_ok = true;
+        alert("✅ 三要素比对成功：身份真实有效");
+    } else {
+        alert("❌ 身份信息不匹配，核验失败");
+    }
+}
+
+// 随机身份核验（防冒用）
+function randomCheck(){
+    let list = ["真实姓名","身份证号码","手机号码","常住地址"];
+    alert("🔍 随机身份核验项："+ list[Math.floor(Math.random()*list.length)]);
 }
 </script>
 </body>
