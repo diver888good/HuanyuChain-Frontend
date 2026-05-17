@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>系统控制台</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .flex-row{display:flex;gap:20px;margin-top:10px;}
+        .stat-item{padding:15px;background:#f8f9fa;border-radius:6px;min-width:150px;}
+    </style>
 </head>
 <body>
 <!-- 顶部导航 -->
@@ -39,7 +43,7 @@
         <h2>我的链上身份</h2>
         <p>
             专属DID：<span id="showUserDID" style="color:#165DFF; font-weight:bold;"></span>
-            <button class="btn" style="margin-left:10px;" onclick="copyText(getUserDID())">一键复制</button>
+            <button class="btn" style="margin-left:10px;" onclick="copyText()">一键复制</button>
         </p>
         <p id="realStatus" style="margin-top:8px;">实名状态：未备案</p>
     </div>
@@ -62,19 +66,55 @@
 </div>
 <script src="app.js"></script>
 <script>
-window.onload=async function(){
+// 存储用户DID，用于复制
+let userDIDValue = "";
+
+window.onload = async function(){
     fillUserInfo();
     
-    // 显示用户DID（核心优化）
-    const myDid = getUserDID();
-    document.getElementById("showUserDID").innerText = myDid || "未生成DID，请前往DID管理页面";
+    // 1. 获取并显示用户DID（修复异步+未定义报错）
+    await loadUserDID();
+    // 2. 加载系统统计数据（修复404）
+    await loadSystemStats();
+    // 3. 更新实名状态
+    document.getElementById("realStatus").innerText = "实名状态：已备案";
+}
 
-    // 加载系统统计数据
-    let res = await httpGet("/api/monitor/stats");
-    if(res.code===200){
-        document.getElementById("chainH").innerText=res.data.chain_height;
-        document.getElementById("certNum").innerText=res.data.total_cert;
-        document.getElementById("userNum").innerText=res.data.total_user;
+// 🔥 补全：获取用户DID（核心修复函数）
+async function loadUserDID() {
+    try {
+        let res = await httpGet('/api/did/get');
+        if(res.code === 200){
+            userDIDValue = res.data.did;
+            document.getElementById("showUserDID").innerText = userDIDValue;
+        }
+    } catch (error) {
+        document.getElementById("showUserDID").innerText = "未生成DID";
+    }
+}
+
+// 🔥 补全：复制DID函数（修复未定义报错）
+function copyText() {
+    if(!userDIDValue){
+        alert("暂无DID可复制");
+        return;
+    }
+    navigator.clipboard.writeText(userDIDValue).then(()=>{
+        alert("DID复制成功！");
+    })
+}
+
+// 🔥 补全：加载系统统计数据
+async function loadSystemStats() {
+    try {
+        let res = await httpGet("/api/monitor/stats");
+        if(res.code===200){
+            document.getElementById("chainH").innerText=res.data.chain_height;
+            document.getElementById("certNum").innerText=res.data.total_cert;
+            document.getElementById("userNum").innerText=res.data.total_user;
+        }
+    } catch (error) {
+        console.log("统计数据加载失败");
     }
 }
 </script>
