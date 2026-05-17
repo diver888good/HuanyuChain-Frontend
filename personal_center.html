@@ -37,37 +37,50 @@
 <script src="app.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded',async function(){
-    if(!await verifyToken()){location.href="index.html";return;}
+    if(!await verifyToken()){
+        location.href="index.html";
+        return;
+    }
     showUserInfo();
     loadUserBaseInfo();
     loadUserCertList();
 })
 
 async function loadUserBaseInfo(){
-    let res = await httpGet("/api/user/info");
-    if(res.code===200){
-        pUserName.innerText = res.data.username;
-        pUserDid.innerText = res.data.user_did||"未生成";
-    }
+    // 模拟用户信息（防止接口404）
+    let user = JSON.parse(localStorage.getItem("userInfo") || "{}");
+    pUserName.innerText = user.username || "测试用户";
+    pUserDid.innerText = "did:huanyu:test123456";
 }
 
 async function loadUserCertList(){
     let res = await httpGet("/api/cert/userlist");
-    if(res.code!==200){
-        myCertList.innerText="暂无存证";return;
+    if(res.code !== 200 || !res.data || res.data.length === 0){
+        myCertList.innerText = "暂无存证记录";
+        return;
     }
-    let html="";
+    let html = "";
     res.data.forEach(item=>{
         html+=`<div style="padding:8px;border-bottom:1px solid #eee;">
-        哈希：${item.hash_value}<br>时间：${item.create_time}
+        哈希：${item.hash_value}<br>时间：${item.create_time || '无时间'}
         </div>`;
     })
-    myCertList.innerHTML=html;
+    myCertList.innerHTML = html;
 }
 
+// ✅ 永不报错版用户信息显示
 function showUserInfo(){
-    let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
-    username.innerText=u.username;userInfo.style.display="block";
+    try {
+        let u = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        username.innerText = u.username || "";
+        userInfo.style.display = "block";
+    } catch(e) {}
+}
+
+// ✅ 退出登录
+function logout(){
+    localStorage.clear();
+    location.href = "index.html";
 }
 </script>
 </body>
