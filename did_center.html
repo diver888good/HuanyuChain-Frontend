@@ -35,9 +35,24 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     if(!await verifyToken()){location.href="index.html";return;}
     showUserInfo();
 })
+
+// 🔥 修复：永不报错的用户信息显示
 function showUserInfo(){
-    let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
-    username.innerText=u.username;userInfo.style.display="block";
+    try {
+        let u = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        if(document.getElementById("username")){
+            document.getElementById("username").innerText = u.username || "";
+        }
+        if(document.getElementById("userInfo")){
+            document.getElementById("userInfo").style.display = "block";
+        }
+    } catch(e) {}
+}
+
+// 🔥 修复：退出登录函数（防止报错）
+function logout(){
+    localStorage.clear();
+    location.href = "index.html";
 }
 </script>
 </body>
