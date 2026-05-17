@@ -40,14 +40,15 @@ async function verifyLogin(){
     return res.code === 200;
 }
 
-// 退出登录
+// 退出登录（清空所有身份信息）
 function userLogout(){
     localStorage.removeItem("token");
     localStorage.removeItem("userInfo");
+    localStorage.removeItem("userDID");
     location.href="index.html";
 }
 
-// 页面权限拦截
+// 页面权限拦截 + 自动回填DID
 document.addEventListener("DOMContentLoaded",async ()=>{
     let loginStatus = await verifyLogin();
     let currPage = location.pathname.split("/").pop();
@@ -63,6 +64,8 @@ document.addEventListener("DOMContentLoaded",async ()=>{
     if(currPage === "index.html" && loginStatus){
         location.href="dashboard.html";
     }
+    // 自动填充所有页面的DID输入框
+    autoFillUserDID();
 })
 
 // 填充用户信息
@@ -70,4 +73,35 @@ function fillUserInfo(){
     let user = JSON.parse(localStorage.getItem("userInfo")||"{}");
     let unameDom = document.getElementById("userName");
     if(unameDom) unameDom.innerText = user.username||"管理员";
+}
+
+// ========== DID 核心功能（用户无需手动查找）==========
+// 保存DID到本地
+function saveUserDID(didStr){
+    localStorage.setItem("userDID", didStr);
+}
+
+// 获取本地DID
+function getUserDID(){
+    return localStorage.getItem("userDID") || "";
+}
+
+// 自动填充页面所有DID输入框
+function autoFillUserDID(){
+    let did = getUserDID();
+    if(!did) return;
+    document.querySelectorAll('input[placeholder*="DID"], input[id*="did"]').forEach(item => {
+        item.value = did;
+    });
+}
+
+// 一键复制功能
+function copyText(text){
+    const input = document.createElement('input');
+    input.value = text;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    alert('复制成功！');
 }
