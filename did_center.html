@@ -3,100 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DID终身身份中心</title>
+    <title>DID管理中心</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .center-box{max-width:700px;margin:30px auto;padding:25px;background:#fff;border-radius:10px;}
-        .did-item{padding:15px;border:1px solid #eee;border-radius:8px;margin:10px 0;}
-        .status-full{color:green;font-weight:bold;}
-        .status-unauth{color:red;}
-        .tip{font-size:12px;color:#666;margin-top:8px;}
-    </style>
 </head>
 <body>
     <header>
-        <div class="header-box">
-            <h2>DID终身唯一身份管理中心</h2>
-            <a href="index.html">首页</a>
-            <a href="full_auth.html">去实名认证</a>
-            <a href="dashboard.html">管理面板</a>
+        <div class="header-container">
+            <h1 class="logo">寰域链 V8.0</h1>
+            <nav>
+                <a href="index.html">首页</a>
+                <a href="did_identity.html">DID身份</a>
+                <a href="did_center.html" class="active">DID管理中心</a>
+            </nav>
+            <div id="userInfo" style="display:none">
+                <span id="username"></span>
+                <button onclick="logout()">退出</button>
+            </div>
         </div>
     </header>
-
-    <div class="center-box">
-        <div id="statusShow" class="did-item"></div>
-
-        <div class="did-item">
-            <h4>一键生成终身主DID</h4>
-            <button class="btn btn-primary" onclick="createMainDid()">立即创建</button>
-            <p class="tip">一个账号仅可创建一个，终身永久使用</p>
+    <main class="container">
+        <div class="card">
+            <div class="card-header"><h3>全域DID身份管理</h3></div>
+            <div class="card-body">
+                <p>统一管理用户去中心化身份标识</p>
+            </div>
         </div>
-
-        <div class="did-item" id="didInfoBox" style="display:none;">
-            <p>您的终身主DID：<span id="myDid"></span></p>
-            <p>SM2公钥：<span id="pubKey"></span></p>
-            <p>SM2私钥：<span id="priKey"></span></p>
-            <p class="tip">私钥请妥善保管，登录账号可自动恢复</p>
-        </div>
-
-        <div class="did-item">
-            <h4>本人私密身份核验</h4>
-            <button class="btn btn-warn" onclick="openSelfVerify()">进入核验</button>
-            <p class="tip">高权限存证操作必须完成本人核验</p>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
-    <script>
-        let userId = "";
-        window.onload = async function(){
-            // 登录校验
-            const isLogin = await verifyToken();
-            if(!isLogin){
-                location.href="login.html";
-                return;
-            }
-            let user = JSON.parse(localStorage.getItem("userInfo")||"{}");
-            userId = user.id;
-            // 渲染用户状态
-            showUserStatus();
-        }
-
-        // 获取用户实名与DID状态
-        async function showUserStatus(){
-            const statusBox = document.getElementById("statusShow");
-            statusBox.innerHTML = `
-                <p>✅ 登录状态：已登录</p>
-                <p>📌 用户ID：${userId}</p>
-                <p>🔒 实名状态：未实名 <span class="status-unauth">请先完成实名认证</span></p>
-            `;
-        }
-
-        // 创建终身主DID（适配后端真实接口）
-        async function createMainDid(){
-            try {
-                // 🔥 修复：对接后端正确接口 /api/did/generate
-                let res = await httpPost("/api/did/generate",{user_id:userId});
-                if(res.code===200){
-                    alert(res.msg);
-                    // 显示DID信息
-                    document.getElementById("didInfoBox").style.display="block";
-                    document.getElementById("myDid").innerText = res.data.did;
-                    document.getElementById("pubKey").innerText = res.data.sm2_public_key;
-                    document.getElementById("priKey").innerText = res.data.sm2_private_key;
-                }else{
-                    alert(res.msg || "DID创建失败");
-                }
-            } catch (error) {
-                alert("网络异常，请重试");
-                console.error(error);
-            }
-        }
-
-        // 跳转本人身份核验页面
-        function openSelfVerify(){
-            location.href="self_verify.html";
-        }
-    </script>
+    </main>
+<script src="app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded',async ()=>{
+    if(!await verifyToken()){location.href="index.html";return;}
+    showUserInfo();
+})
+function showUserInfo(){
+    let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
+    username.innerText=u.username;userInfo.style.display="block";
+}
+</script>
 </body>
 </html>
