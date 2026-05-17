@@ -42,31 +42,35 @@
 </div>
 <script src="app.js"></script>
 <script>
+// 初始化用户信息
 fillUserInfo();
 
-// 🔥 核心修复：配置你的PythonAnywhere公网后端地址（静态页面必须用公网）
-const BASE_API = "https://huanyuchain.pythonanywhere.com";
-
+// 核心修复：删除重复变量，直接使用完整接口地址（无语法错误）
 async function sendAiChat(){
     let msg = document.getElementById('chatMsg').value.trim();
+    let replyDom = document.getElementById('aiReply');
+
+    // 空值判断
     if(!msg){
-        document.getElementById('aiReply').innerText = "请输入提问内容";
+        replyDom.innerText = "请输入提问内容";
         return;
     }
 
     try {
-        // 拼接完整接口地址 + 适配后端参数
-        let res = await httpPost(BASE_API + '/api/ai/chat', { content: msg });
-        // 兼容返回结果
-        if(res && res.code === 200){
-            document.getElementById('aiReply').innerText = res.data.reply;
-        }else{
-            document.getElementById('aiReply').innerText = "AI服务暂不可用，请稍后重试";
+        // 直接请求公网后端地址（解决服务器连接失败）
+        let res = await httpPost('https://huanyuchain.pythonanywhere.com/api/ai/chat', { 
+            content: msg 
+        });
+        
+        if(res?.code === 200){
+            replyDom.innerText = res.data.reply;
+        } else {
+            replyDom.innerText = "AI服务暂不可用";
         }
     } catch (error) {
-        // 修复服务器连接失败的友好提示
-        document.getElementById('aiReply').innerText = "⚠️ 服务器连接失败，请检查后端服务是否启动";
-        console.log(error);
+        // 友好提示服务器错误
+        replyDom.innerText = "⚠️ 服务器连接失败，请检查后端服务";
+        console.error(error);
     }
 }
 </script>
