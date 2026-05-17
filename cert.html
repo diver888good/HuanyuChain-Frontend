@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>链上数据存证</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* 仅新增极简样式，不破坏原有布局 */
+        .upload-box{margin:12px 0;}
+        .hash-btn{margin:8px 5px 8px 0;background:#165DFF;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;}
+    </style>
 </head>
 <body>
 <div class="top-nav">
@@ -33,6 +38,14 @@
 <div class="main-content">
     <div class="card">
         <h2>数据哈希上链存证</h2>
+
+        <!-- ===================== 【新增】文件上传控件 ===================== -->
+        <div class="upload-box">
+            <input type="file" id="uploadFile" placeholder="选择要存证的文件">
+            <button class="hash-btn" onclick="createFileHash()">生成文件哈希值</button>
+        </div>
+
+        <!-- 原有哈希输入框（自动填充生成的哈希） -->
         <input type="text" id="fileHash" placeholder="填写文件SHA哈希值">
         <textarea id="metaInfo" placeholder="备注元数据信息"></textarea>
         <button class="btn" onclick="addChainCert()">提交存证</button>
@@ -43,9 +56,12 @@
         <button class="btn" onclick="checkCert()">立即核验</button>
     </div>
 </div>
+
 <script src="app.js"></script>
 <script>
 fillUserInfo();
+
+// ===================== 【原有代码 100%保留】 =====================
 async function addChainCert(){
     let data = {
         file_hash: document.getElementById('fileHash').value,
@@ -58,6 +74,30 @@ async function checkCert(){
     let hash = document.getElementById('checkHash').value;
     let res = await httpGet(`/api/chain/verify/${hash}`);
     alert(res.msg);
+}
+
+// ===================== 【新增】文件哈希生成（自动填充） =====================
+function createFileHash() {
+    const fileInput = document.getElementById('uploadFile');
+    const file = fileInput.files[0];
+    if (!file) {
+        alert("请先选择文件！");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+        // 计算文件SHA256哈希值（匹配区块链存证标准）
+        const buffer = e.target.result;
+        const hashBuffer = await crypto.subtle.digest('SHA-256', new Uint8Array(buffer));
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        
+        // 自动填充到哈希输入框
+        document.getElementById('fileHash').value = fileHash;
+        alert("哈希值生成成功！已自动填充");
+    };
+    reader.readAsArrayBuffer(file);
 }
 </script>
 </body>
