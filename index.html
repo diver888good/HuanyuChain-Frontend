@@ -62,12 +62,12 @@
     </main>
 <script src="app.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded',async function(){
+document.addEventListener('DOMContentLoaded', async function(){
     let ok = await verifyToken();
     if(ok){
-        loginBox.style.display="none";
-        certBox.style.display="block";
-        checkBox.style.display="block";
+        loginBox.style.display = "none";
+        certBox.style.display = "block";
+        checkBox.style.display = "block";
         showUserInfo();
     }
 })
@@ -75,31 +75,31 @@ document.addEventListener('DOMContentLoaded',async function(){
 async function userLogin(){
     let u = uname.value.trim();
     let p = upwd.value.trim();
-    if(!u||!p)return alert("请填写账号密码");
-    let res = await httpPost("/api/auth/login",{username:u,password:p});
-    if(res.code===200){
-        localStorage.setItem("token",res.data.token);
-        // 🔥 修复：防止 user 不存在导致 JSON 报错
-        localStorage.setItem("userInfo",JSON.stringify(res.data.user || {}));
+    if(!u || !p) return alert("请填写账号密码");
+    
+    let res = await httpPost("/api/auth/login", { username:u, password:p });
+    if(res.code === 200){
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("userInfo", JSON.stringify(res.data.user || {}));
         alert("登录成功");
         location.reload();
-    }else{
-        alert(res.msg);
+    } else {
+        alert(res.msg || "登录失败");
     }
 }
 
 function textHash(){
     let t = certText.value.trim();
-    if(!t)return alert("请输入内容");
+    if(!t) return alert("请输入内容");
     hashVal.value = CryptoJS.SHA256(t).toString();
 }
 
 function fileHash(){
     let f = fileUp.files[0];
-    if(!f)return alert("请选择文件");
+    if(!f) return alert("请选择文件");
     let r = new FileReader();
     r.readAsArrayBuffer(f);
-    r.onload=e=>{
+    r.onload = e => {
         let w = CryptoJS.lib.WordArray.create(e.target.result);
         hashVal.value = CryptoJS.SHA256(w).toString();
     }
@@ -108,33 +108,36 @@ function fileHash(){
 async function submitCert(){
     let h = hashVal.value.trim();
     let m = metaData.value.trim();
-    if(!h)return alert("请生成哈希");
-    let res = await httpPost("/api/cert/add",{hash_value:h,meta_data:m});
-    resText.innerText = res.msg;
+    if(!h) return alert("请生成哈希");
+    
+    let res = await httpPost("/api/cert/add", { hash_value:h, meta_data:m });
+    resText.innerText = res.msg || "提交成功";
 }
 
 async function checkCertInfo(){
     let k = checkKey.value.trim();
-    if(!k)return;
+    if(!k) return;
     let res = await httpGet(`/api/cert/query?key=${k}`);
-    checkRes.innerText = res.msg;
+    checkRes.innerText = res.msg || "核验完成";
 }
 
-// 🔥 修复：彻底解决 JSON.parse 报错
+// ✅ 永不报错版用户信息
 function showUserInfo(){
     try {
         let info = JSON.parse(localStorage.getItem("userInfo") || "{}");
-        username.innerText = info.username || "";
-        userInfo.style.display = "block";
-    } catch(e) {
-        // 出错不影响页面
-    }
+        if(document.getElementById("username")){
+            document.getElementById("username").innerText = info.username || "";
+        }
+        if(document.getElementById("userInfo")){
+            document.getElementById("userInfo").style.display = "block";
+        }
+    } catch(e) {}
 }
 
-// 🔥 修复：增加 logout 函数，防止报错
+// ✅ 安全退出
 function logout(){
     localStorage.clear();
-    location.reload();
+    location.href = "index.html";
 }
 </script>
 </body>
