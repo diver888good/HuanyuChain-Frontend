@@ -40,13 +40,22 @@
 <script src="app.js"></script>
 <script>
 fillUserInfo();
+// 🔥 修复：增加错误捕获 + 安全校验，完全保留你的渲染逻辑
 async function loadContractList(){
-    let res = await httpGet('/api/contract/list');
-    let html = '';
-    res.data.forEach(item=>{
-        html += `<p>合约ID:${item.id}  名称:${item.name}  创建者:${item.creator}  时间:${item.create_time}</p>`
-    })
-    document.getElementById('contractBox').innerHTML = html;
+    try {
+        let res = await httpGet('/api/contract/list');
+        let html = '';
+        // 校验数据存在后再遍历，防止forEach报错
+        if(res.code === 200 && res.data) {
+            res.data.forEach(item=>{
+                html += `<p>合约ID:${item.id}  名称:${item.name}  创建者:${item.creator}  时间:${item.create_time}</p>`
+            })
+        }
+        document.getElementById('contractBox').innerHTML = html;
+    } catch (error) {
+        alert("⚠️ 加载智能合约列表失败");
+        console.error(error);
+    }
 }
 </script>
 </body>
