@@ -40,10 +40,26 @@
 <script src="app.js"></script>
 <script>
 fillUserInfo();
+
+// 🔥 修复：增加错误捕获 + 兼容后端接口
 async function iotDataSave(){
-    let data = {device_id:document.getElementById('deviceId').value};
-    let res = await httpPost('/api/iot/data/cert',data);
-    alert("存证记录ID："+res.data.record_id);
+    try {
+        let device_id = document.getElementById('deviceId').value.trim();
+        if(!device_id){
+            alert("请填写IoT设备编号！");
+            return;
+        }
+
+        let data = { device_id: device_id };
+        let res = await httpPost('/api/iot/data/cert', data);
+        
+        if(res.code === 200){
+            alert("存证记录ID："+ res.data.record_id + "\n设备编号：" + device_id + "\n上链成功！");
+        }
+    } catch (error) {
+        alert("⚠️ 服务器连接失败，存证失败");
+        console.error(error);
+    }
 }
 </script>
 </body>
