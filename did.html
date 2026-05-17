@@ -35,7 +35,7 @@
     <div class="card">
         <h2>我的当前DID</h2>
         <p id="currentDID" style="color:#165DFF; font-weight:bold; font-size:16px;">暂未生成DID</p>
-        <button class="btn" onclick="copyText(getUserDID())">一键复制DID</button>
+        <button class="btn" onclick="copyText()">一键复制DID</button>
     </div>
 
     <div class="card">
@@ -54,10 +54,40 @@
 <script>
 fillUserInfo();
 
-// 页面加载时显示已有DID
+// 🔥 核心修复：补全所有缺失函数
+// 1. 获取本地存储的DID
+function getUserDID() {
+    return localStorage.getItem("user_did") || "";
+}
+
+// 2. 保存DID到本地
+function saveUserDID(did) {
+    localStorage.setItem("user_did", did);
+}
+
+// 3. 自动填充DID到签名框
+function autoFillUserDID() {
+    let did = getUserDID();
+    if(did) {
+        document.getElementById("signDid").value = did;
+    }
+}
+
+// 4. 一键复制DID
+function copyText() {
+    let did = getUserDID();
+    if(!did) {
+        alert("暂无DID可复制！");
+        return;
+    }
+    navigator.clipboard.writeText(did).then(() => {
+        alert("DID复制成功！");
+    })
+}
+
+// 页面加载初始化
 window.onload = function(){
     document.getElementById("currentDID").innerText = getUserDID() || "暂未生成DID";
-    // 自动填充DID到签名输入框
     autoFillUserDID();
 }
 
@@ -67,29 +97,32 @@ async function createUserDID(){
         let uid = JSON.parse(localStorage.userInfo).user_id;
         let res = await httpPost('/api/did/generate',{user_id:uid});
         if(res.code === 200){
-            // 自动保存DID到本地
             saveUserDID(res.data.did);
-            // 刷新页面显示
             document.getElementById("currentDID").innerText = res.data.did;
             alert("DID生成成功！已自动保存\n" + res.data.did);
-            // 同步刷新首页
             autoFillUserDID();
         }else{
             alert(res.msg || "生成失败");
         }
     }catch(e){
         alert("生成DID异常，请重新登录");
+        console.error(e);
     }
 }
 
-// SM2签名
+// SM2国密签名（修复404+错误捕获）
 async function doSm2Sign(){
-    let data = {
-        did: document.getElementById('signDid').value,
-        content: document.getElementById('signContent').value
+    try {
+        let data = {
+            did: document.getElementById('signDid').value,
+            content: document.getElementById('signContent').value
+        }
+        let res = await httpPost('/api/did/service/sign',data);
+        alert("国密SM2签名完成：\n" + JSON.stringify(res.data));
+    } catch (error) {
+        alert("⚠️ 签名服务异常");
+        console.error(error);
     }
-    let res = await httpPost('/api/did/service/sign',data);
-    alert("签名完成：\n" + JSON.stringify(res.data));
 }
 </script>
 </body>
