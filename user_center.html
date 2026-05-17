@@ -5,7 +5,7 @@
     <title>个人用户中心</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;}
-        body{background:#f6f8fa;}
+        body{background:#f6f8fa;font-family:Microsoft YaHei;}
         .top-nav{height:60px;background:#165DFF;display:flex;align-items:center;padding:0 40px;}
         .nav-title{color:#fff;font-size:18px;flex:1;}
         .user-info{color:#fff;}
@@ -38,6 +38,7 @@
             <a href="user_realname.html" class="btn">前往完成强实名</a>
             <a href="user_cert.html" class="btn">提交文件存证</a>
             <a href="user_video.html" class="btn">提交视频存证</a>
+            <a href="user_help.html" class="btn">使用帮助</a>
         </div>
 
         <div class="card">
@@ -60,6 +61,7 @@ let user = JSON.parse(localStorage.userInfo);
 document.getElementById('uname').innerText = user.username;
 document.getElementById('uid').innerText = user.user_id;
 document.getElementById('mydid').innerText = user.main_did||"暂未生成";
+
 if(user.auth_status=="full"){
     document.getElementById('realstate').innerHTML='<span class="yes">已终身实名锁定</span>';
 }else{
@@ -68,6 +70,8 @@ if(user.auth_status=="full"){
 
 function userLogout(){
     localStorage.removeItem("userInfo");
+    localStorage.removeItem("token");
+    alert("已退出登录");
     location.href="login.html";
 }
 
@@ -98,6 +102,7 @@ async function checkHash(){
         document.getElementById('restext').innerText="❌ 核验失败，数据异常";
         document.getElementById('restext').style.color="red";
     }
+}
 </script>
 </body>
 </html>
