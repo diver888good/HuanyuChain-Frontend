@@ -31,13 +31,21 @@
     <a href="ai.html">AI智能对话</a>
 </div>
 <div class="main-content">
+    <!-- 实时显示当前DID + 一键复制 -->
+    <div class="card">
+        <h2>我的当前DID</h2>
+        <p id="currentDID" style="color:#165DFF; font-weight:bold; font-size:16px;">暂未生成DID</p>
+        <button class="btn" onclick="copyText(getUserDID())">一键复制DID</button>
+    </div>
+
     <div class="card">
         <h2>生成用户主DID</h2>
-        <button class="btn" onclick="createUserDID()">生成专属DID</button>
+        <button class="btn" onclick="createUserDID()">生成/刷新专属DID</button>
     </div>
+
     <div class="card">
         <h2>国密SM2电子签名</h2>
-        <input type="text" id="signDid" placeholder="填写你的DID">
+        <input type="text" id="signDid" placeholder="填写你的DID（自动填充）">
         <textarea id="signContent" placeholder="待签名文本内容"></textarea>
         <button class="btn" onclick="doSm2Sign()">发起签名</button>
     </div>
@@ -45,18 +53,43 @@
 <script src="app.js"></script>
 <script>
 fillUserInfo();
-async function createUserDID(){
-    let uid = JSON.parse(localStorage.userInfo).user_id;
-    let res = await httpPost('/api/did/generate',{user_id:uid});
-    alert(JSON.stringify(res.data));
+
+// 页面加载时显示已有DID
+window.onload = function(){
+    document.getElementById("currentDID").innerText = getUserDID() || "暂未生成DID";
+    // 自动填充DID到签名输入框
+    autoFillUserDID();
 }
+
+// 生成DID（自动保存）
+async function createUserDID(){
+    try {
+        let uid = JSON.parse(localStorage.userInfo).user_id;
+        let res = await httpPost('/api/did/generate',{user_id:uid});
+        if(res.code === 200){
+            // 自动保存DID到本地
+            saveUserDID(res.data.did);
+            // 刷新页面显示
+            document.getElementById("currentDID").innerText = res.data.did;
+            alert("DID生成成功！已自动保存\n" + res.data.did);
+            // 同步刷新首页
+            autoFillUserDID();
+        }else{
+            alert(res.msg || "生成失败");
+        }
+    }catch(e){
+        alert("生成DID异常，请重新登录");
+    }
+}
+
+// SM2签名
 async function doSm2Sign(){
     let data = {
         did: document.getElementById('signDid').value,
         content: document.getElementById('signContent').value
     }
     let res = await httpPost('/api/did/service/sign',data);
-    alert(JSON.stringify(res.data));
+    alert("签名完成：\n" + JSON.stringify(res.data));
 }
 </script>
 </body>
