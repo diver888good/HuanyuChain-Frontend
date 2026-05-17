@@ -24,7 +24,7 @@
             </nav>
             <div id="userInfo" style="display: none;">
                 <span id="username"></span>
-                <button class="btn-secondary" onclick="logout()">退出</button>
+                <button id="logoutBtn" class="btn-secondary" onclick="logout()">退出</button>
             </div>
         </div>
     </header>
@@ -33,40 +33,34 @@
         <div class="card">
             <div class="card-header"><h3>视频哈希存证</h3></div>
             <div class="card-body">
-                <input type="file" id="videoFile" accept="video/*" style="margin: 10px 0;">
+                <input type="file" id="videoFile" accept="video/*" style="margin:10px 0;">
                 <button class="btn-primary" onclick="getVideoHash()">生成视频哈希</button>
                 
-                <div style="margin: 15px 0;">
-                    <input type="text" id="videoHash" readonly style="width: 100%; padding: 8px;">
+                <div style="margin:15px 0;">
+                    <label>哈希值：</label>
+                    <input type="text" id="videoHash" readonly style="width:100%; padding:8px; margin-top:5px;">
                 </div>
 
-                <button class="btn-primary" onclick="submitVideoCert()">提交存证</button>
-                <div id="certResult" style="margin-top: 15px;"></div>
+                <button class="btn-primary" onclick="submitVideoCert()">提交视频存证</button>
+                <div id="certResult" style="margin-top:15px; padding:10px; border-radius:6px;"></div>
             </div>
         </div>
     </main>
 
-    <!-- 纯本地代码，无app.js，无任何外部函数 -->
+    <script src="app.js"></script>
     <script>
-        // 唯一加载逻辑，无Promise、无verifyToken、无showUserInfo
-        window.onload = function() {
-            // 本地登录判断
-            const token = localStorage.getItem("token");
-            if (!token) {
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isLogin = await verifyToken();
+            if (!isLogin) {
                 alert("请先登录！");
                 location.href = "index.html";
                 return;
             }
+            showUserInfo();
+        });
 
-            // 直接渲染用户名，不调用任何外部函数
-            const user = JSON.parse(localStorage.getItem("userInfo") || '{}');
-            document.getElementById("username").innerText = user.username || "本地用户";
-            document.getElementById("userInfo").style.display = "block";
-        };
-
-        // 生成视频哈希
         function getVideoHash() {
-            const file = document.getElementById("videoFile").files[0];
+            const file = videoFile.files[0];
             if (!file) {
                 alert("请选择视频文件！");
                 return;
@@ -74,34 +68,31 @@
             const reader = new FileReader();
             reader.readAsArrayBuffer(file);
             reader.onload = (e) => {
-                const hash = CryptoJS.SHA256(CryptoJS.lib.WordArray.create(e.target.result)).toString();
-                document.getElementById("videoHash").value = hash;
-                alert("哈希生成成功！");
+                const wordArray = CryptoJS.lib.WordArray.create(e.target.result);
+                const hash = CryptoJS.SHA256(wordArray).toString();
+                videoHash.value = hash;
+                alert("✅ 视频哈希生成成功！");
             };
         }
 
-        // 本地保存存证
-        function submitVideoCert() {
-            const hash = document.getElementById("videoHash").value;
+        async function submitVideoCert() {
+            const hash = videoHash.value.trim();
             if (!hash) {
-                alert("请先生成哈希！");
+                alert("请先生成视频哈希！");
                 return;
             }
-            const record = {
-                type: "视频存证",
-                hash: "VIDEO-" + Date.now(),
-                time: new Date().toLocaleString()
-            };
-            const list = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
-            list.unshift(record);
-            localStorage.setItem("MY_CERTS", JSON.stringify(list));
-            document.getElementById("certResult").innerText = "✅ 存证成功！";
+            try{
+                let res = await httpPost("/api/cert/video",{video_hash:hash});
+                certResult.innerText = res.msg;
+            }catch(e){
+                certResult.innerText = "提交失败";
+            }
         }
 
-        // 退出登录
-        function logout() {
-            localStorage.clear();
-            location.href = "index.html";
+        function showUserInfo(){
+            let u = JSON.parse(localStorage.getItem("userInfo")||"{}");
+            username.innerText = u.username||"";
+            userInfo.style.display = "block";
         }
     </script>
 </body>
