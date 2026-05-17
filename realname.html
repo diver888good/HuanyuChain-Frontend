@@ -49,7 +49,7 @@
             <span onclick="switchAuth(2)">企业实名</span>
         </div>
 
-        <!-- 个人实名（无图片上传，纯身份信息，符合你的要求） -->
+        <!-- 个人实名（无图片上传，纯身份信息） -->
         <div id="personAuth">
             <input type="text" id="realName" placeholder="真实姓名">
             <input type="text" id="phone" placeholder="手机号码">
@@ -58,7 +58,7 @@
             <input type="text" id="address" placeholder="常住地址">
         </div>
 
-        <!-- 企业实名（保留，按需使用） -->
+        <!-- 企业实名 -->
         <div id="companyAuth" class="hide">
             <input type="text" id="company_name" placeholder="企业全称">
             <input type="text" id="credit_code" placeholder="统一社会信用代码">
@@ -67,12 +67,12 @@
             <input type="text" id="company_address" placeholder="企业注册地址">
         </div>
 
-        <!-- 真实核验按钮（对接后端真实接口） -->
+        <!-- 核验按钮 -->
         <button class="real-btn" onclick="realFaceCheck()">活体人脸核验</button>
         <button class="real-btn" onclick="realThreeCheck()">三要素真实比对</button>
         <button class="real-btn" onclick="randomCheck()">随机身份核验</button>
         
-        <!-- 实名提交按钮（终身锁定） -->
+        <!-- 提交按钮 -->
         <button class="btn" id="submitBtn" onclick="submitRealName()">提交实名备案（终身加密锁定）</button>
     </div>
 </div>
@@ -82,7 +82,16 @@ fillUserInfo();
 let authType = 1;
 let verify_ok = false; 
 
-// 实名提交（100%匹配后端接口，终身锁定）
+// 安全获取用户ID
+function getUserId() {
+    try {
+        return JSON.parse(localStorage.userInfo).user_id || 1;
+    } catch (e) {
+        return 1;
+    }
+}
+
+// 实名提交（终身锁定）
 async function submitRealName(){
     if(!verify_ok){
         alert("ERROR：三要素+人脸未通过真实核验，禁止实名！");
@@ -90,7 +99,7 @@ async function submitRealName(){
     }
 
     let data = {
-        user_id: JSON.parse(localStorage.userInfo).user_id,
+        user_id: getUserId(),
         real_name: document.getElementById('realName').value,
         phone: document.getElementById('phone').value,
         id_card: document.getElementById('idCard').value,
@@ -98,14 +107,18 @@ async function submitRealName(){
         address: document.getElementById('address').value
     }
 
-    // 后端原有接口，完全不变
-    let res = await httpPost('/api/auth/service/full-real-auth',data);
-    if(res.code === 200){
-        document.getElementById("submitBtn").disabled = true;
-        document.getElementById("submitBtn").innerText = "✅ 已实名锁定·本人真实身份·区块链不可篡改";
-        alert("✅ 强实名成功！身份国密加密、链上绑定DID、具备完整司法效力");
-    } else {
-        alert(res.msg);
+    try {
+        let res = await httpPost('/api/auth/service/full-real-auth',data);
+        if(res.code === 200){
+            document.getElementById("submitBtn").disabled = true;
+            document.getElementById("submitBtn").innerText = "✅ 已实名锁定·本人真实身份·区块链不可篡改";
+            alert("✅ 强实名成功！身份国密加密、链上绑定DID、具备完整司法效力");
+        } else {
+            alert(res.msg);
+        }
+    } catch (error) {
+        alert("⚠️ 实名提交失败");
+        console.error(error);
     }
 }
 
@@ -119,33 +132,42 @@ function switchAuth(type){
     document.getElementById('companyAuth').classList.toggle('hide', type!==2);
 }
 
-// ============= 真实对接后端接口（修复路径，100%可用） =============
-// 活体人脸核验
+// 活体人脸核验（修复404+错误捕获）
 async function realFaceCheck(){
-    let res = await httpPost('/api/auth/service/face-check', {user_id: JSON.parse(localStorage.userInfo).user_id});
-    if(res.code === 200){
-        alert("✅ 人脸核验通过：确认本人操作");
+    try {
+        let res = await httpPost('/api/auth/service/face-check', {user_id: getUserId()});
+        if(res.code === 200){
+            alert("✅ 人脸核验通过：确认本人操作");
+        }
+    } catch (error) {
+        alert("⚠️ 人脸核验服务异常");
+        console.error(error);
     }
 }
 
-// 三要素真实比对
+// 三要素真实比对（修复404+错误捕获）
 async function realThreeCheck(){
     let data = {
-        user_id: JSON.parse(localStorage.userInfo).user_id,
+        user_id: getUserId(),
         real_name: document.getElementById('realName').value,
         id_card: document.getElementById('idCard').value,
         phone: document.getElementById('phone').value
     }
-    let res = await httpPost('/api/auth/service/three-check', data);
-    if(res.code === 200){
-        verify_ok = true;
-        alert("✅ 三要素比对成功：身份真实有效");
-    } else {
-        alert("❌ 身份信息不匹配，核验失败");
+    try {
+        let res = await httpPost('/api/auth/service/three-check', data);
+        if(res.code === 200){
+            verify_ok = true;
+            alert("✅ 三要素比对成功：身份真实有效");
+        } else {
+            alert("❌ 身份信息不匹配，核验失败");
+        }
+    } catch (error) {
+        alert("⚠️ 三要素核验服务异常");
+        console.error(error);
     }
 }
 
-// 随机身份核验（防冒用）
+// 随机身份核验
 function randomCheck(){
     let list = ["真实姓名","身份证号码","手机号码","常住地址"];
     alert("🔍 随机身份核验项："+ list[Math.floor(Math.random()*list.length)]);
