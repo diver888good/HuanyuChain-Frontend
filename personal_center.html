@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人中心 - 寰域链 V8.0</title>
+    <title>个人中心</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,77 +12,63 @@
             <h1 class="logo">寰域链 V8.0</h1>
             <button class="menu-toggle">☰</button>
             <nav>
-                <a href="index.html">首页存证</a>
+                <a href="index.html">首页</a>
                 <a href="personal_center.html" class="active">个人中心</a>
-                <a href="dashboard.html">管理面板</a>
-                <a href="did_identity.html">DID身份</a>
-                <a href="video_cert.html">视频存证</a>
-                <a href="federated_privacy.html">隐私计算</a>
-                <a href="metaverse_asset.html">元宇宙NFT</a>
-                <a href="gov_dashboard.html">政务中台</a>
             </nav>
-            <div id="userInfo" style="display: none;">
+            <div id="userInfo" style="display:none">
                 <span id="username"></span>
-                <button id="logoutBtn" class="btn-secondary" onclick="logout()">退出</button>
+                <button onclick="logout()">退出</button>
             </div>
         </div>
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>个人信息</h3></div>
+            <div class="card-header"><h3>个人资料</h3></div>
             <div class="card-body">
-                <p>用户名：<span id="myUserName"></span></p>
-                <p>DID身份：<span id="myDidText">暂无</span></p>
+                <p>用户名：<span id="pUserName"></span></p>
+                <p>绑定DID：<span id="pUserDid"></span></p>
             </div>
         </div>
-        <div class="card" style="margin-top: 20px;">
+        <div class="card" style="margin-top:20px">
             <div class="card-header"><h3>我的存证记录</h3></div>
-            <div class="card-body" id="userCertList">加载中...</div>
+            <div class="card-body" id="myCertList">加载中...</div>
         </div>
     </main>
+<script src="app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded',async function(){
+    if(!await verifyToken()){location.href="index.html";return;}
+    showUserInfo();
+    loadUserBaseInfo();
+    loadUserCertList();
+})
 
-    <script src="app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded',async ()=>{
-            let loginFlag = await verifyToken();
-            if(!loginFlag){
-                location.href="index.html";
-                return;
-            }
-            showUserInfo();
-            loadUserInfoData();
-            loadUserCertList();
-        });
+async function loadUserBaseInfo(){
+    let res = await httpGet("/api/user/info");
+    if(res.code===200){
+        pUserName.innerText = res.data.username;
+        pUserDid.innerText = res.data.user_did||"未生成";
+    }
+}
 
-        async function loadUserInfoData(){
-            let res = await httpGet("/api/user/info");
-            if(res.code===200){
-                myUserName.innerText = res.data.username;
-                myDidText.innerText = res.data.user_did||"未生成";
-            }
-        }
+async function loadUserCertList(){
+    let res = await httpGet("/api/cert/userlist");
+    if(res.code!==200){
+        myCertList.innerText="暂无存证";return;
+    }
+    let html="";
+    res.data.forEach(item=>{
+        html+=`<div style="padding:8px;border-bottom:1px solid #eee;">
+        哈希：${item.hash_value}<br>时间：${item.create_time}
+        </div>`;
+    })
+    myCertList.innerHTML=html;
+}
 
-        async function loadUserCertList(){
-            let res = await httpGet("/api/cert/userlist");
-            let box = userCertList;
-            if(res.code!==200){
-                box.innerText = "暂无存证数据";
-                return;
-            }
-            let html = "";
-            res.data.forEach(item=>{
-                html += `<div style="padding:8px;border-bottom:1px solid #eee;">
-                    哈希值：${item.hash_value}<br>提交时间：${item.create_time}
-                </div>`;
-            });
-            box.innerHTML = html;
-        }
-
-        function showUserInfo(){
-            let u = JSON.parse(localStorage.getItem("userInfo")||"{}");
-            username.innerText = u.username||"";
-            userInfo.style.display = "block";
-        }
-    </script>
+function showUserInfo(){
+    let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
+    username.innerText=u.username;userInfo.style.display="block";
+}
+</script>
 </body>
 </html>
