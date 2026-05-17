@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>司法存证报告</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* 新增：司法章样式 */
+        .seal{color:#e63946;font-weight:bold;font-size:15px;}
+        .pdf-link{color:#0066cc;font-weight:bold;text-decoration:underline;}
+    </style>
 </head>
 <body>
 <div class="top-nav">
@@ -35,16 +40,38 @@
         <h2>根据哈希获取司法存证报告</h2>
         <input type="text" id="reportHash" placeholder="填写存证哈希值">
         <button class="btn" onclick="getJudicialReport()">获取报告链接</button>
-        <p id="reportUrl"></p>
+        <p id="reportUrl" style="margin-top:12px;"></p>
     </div>
 </div>
+
 <script src="app.js"></script>
 <script>
 fillUserInfo();
+
+// 🔥 修复报错 + 升级PDF+电子章功能
 async function getJudicialReport(){
-    let hash = document.getElementById('reportHash').value;
-    let res = await httpGet(`/api/judicial/report/${hash}`);
-    document.getElementById('reportUrl').innerText = "报告地址："+res.data.report_url;
+    try {
+        let hash = document.getElementById('reportHash').value.trim();
+        if(!hash){
+            alert("请输入存证哈希值！");
+            return;
+        }
+
+        let res = await httpGet(`/api/judicial/report/${hash}`);
+        if(res.code === 200){
+            // 显示：PDF地址 + 电子公章 + 司法状态
+            document.getElementById('reportUrl').innerHTML = `
+                报告地址：<a class="pdf-link" href="${res.data.report_url}" target="_blank">${res.data.report_name}</a><br>
+                <span class="seal">${res.data.seal_status} | ${res.data.seal}</span><br>
+                核验状态：${res.data.valid}
+            `;
+        }else{
+            alert(res.msg);
+        }
+    } catch (error) {
+        alert("⚠️ 报告生成失败，请检查哈希值");
+        console.error(error);
+    }
 }
 </script>
 </body>
