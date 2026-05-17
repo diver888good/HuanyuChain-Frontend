@@ -57,50 +57,55 @@
 
 <script src="app.js"></script>
 <script>
+// 初始化用户信息
 let user = JSON.parse(localStorage.userInfo);
 document.getElementById('uname').innerText = user.username;
-document.getElementById('uid').innerText = user.user_id;
-document.getElementById('mydid').innerText = user.main_did||"暂未生成";
+document.getElementById('uid').innerText = user.user_id || "";
+document.getElementById('mydid').innerText = user.main_did || "暂未生成";
 
-if(user.auth_status=="full"){
-    document.getElementById('realstate').innerHTML='<span class="yes">已终身实名锁定</span>';
+// 实名状态判断
+if(user.auth_status == "full"){
+    document.getElementById('realstate').innerHTML = '<span class="yes">已终身实名锁定</span>';
 }else{
-    document.getElementById('realstate').innerHTML='<span class="no">未完成实名</span>';
+    document.getElementById('realstate').innerHTML = '<span class="no">未完成实名</span>';
 }
 
+// 退出登录
 function userLogout(){
     localStorage.removeItem("userInfo");
     localStorage.removeItem("token");
     alert("已退出登录");
-    location.href="login.html";
+    location.href = "login.html";
 }
 
+// 获取我的存证
 async function getMyCert(){
     let res = await httpGet("/api/cert/userlist");
-    let html="";
-    if(res.data.length==0){
-        html="<p>暂无个人存证数据</p>";
+    let html = "";
+    if(res.data.length == 0){
+        html = "<p>暂无个人存证数据</p>";
     }else{
-        res.data.forEach(v=>{
-            html+=`<div class="cert-item">
+        res.data.forEach(v => {
+            html += `<div class="cert-item">
                 <p>标题：${v.title}</p>
                 <p>存证哈希：${v.hash}</p>
                 <p>提交时间：${v.time}</p>
             </div>`;
-        })
+        });
     }
-    document.getElementById('mylist').innerHTML=html;
+    document.getElementById('mylist').innerHTML = html;
 }
 
+// 核验哈希
 async function checkHash(){
     let h = document.getElementById('vhash').value;
     let res = await httpGet(`/api/cert/query?hash=${h}`);
-    if(res.code==200){
-        document.getElementById('restext').innerText="✅ 核验通过，证据真实有效未篡改";
-        document.getElementById('restext').style.color="green";
+    if(res.code == 200){
+        document.getElementById('restext').innerText = "✅ 核验通过，证据真实有效未篡改";
+        document.getElementById('restext').style.color = "green";
     }else{
-        document.getElementById('restext').innerText="❌ 核验失败，数据异常";
-        document.getElementById('restext').style.color="red";
+        document.getElementById('restext').innerText = "❌ 核验失败，数据异常";
+        document.getElementById('restext').style.color = "red";
     }
 }
 </script>
