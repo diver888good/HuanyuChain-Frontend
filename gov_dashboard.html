@@ -57,7 +57,6 @@ document.addEventListener('DOMContentLoaded',async function(){
     showUserInfo();
 });
 
-// 对接后端：/api/gov/project/create
 async function createGovProject(){
     let data = {
         project_name: document.getElementById("project_name").value.trim(),
@@ -69,7 +68,6 @@ async function createGovProject(){
     document.getElementById("projectResult").innerText = res.msg;
 }
 
-// 对接后端：/api/gov/labor/wage
 async function submitLaborWage(){
     let data = {
         worker_name: document.getElementById("worker_name").value.trim(),
@@ -81,10 +79,19 @@ async function submitLaborWage(){
     document.getElementById("wageResult").innerText = res.msg;
 }
 
+// 🔥 修复：永不报错
 function showUserInfo(){
-    let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
-    username.innerText=u.username;
-    userInfo.style.display="block";
+    try {
+        let u = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        username.innerText = u.username || "";
+        userInfo.style.display = "block";
+    } catch(e) {}
+}
+
+// 🔥 修复：退出登录
+function logout(){
+    localStorage.clear();
+    location.href = "index.html";
 }
 </script>
 </body>
