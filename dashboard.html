@@ -34,6 +34,16 @@
 </div>
 <!-- 主内容 -->
 <div class="main-content">
+    <!-- 新增：个人身份信息卡片（核心优化） -->
+    <div class="card">
+        <h2>我的链上身份</h2>
+        <p>
+            专属DID：<span id="showUserDID" style="color:#165DFF; font-weight:bold;"></span>
+            <button class="btn" style="margin-left:10px;" onclick="copyText(getUserDID())">一键复制</button>
+        </p>
+        <p id="realStatus" style="margin-top:8px;">实名状态：未备案</p>
+    </div>
+
     <div class="card">
         <h2>系统运行数据统计</h2>
         <div class="flex-row" id="statBox">
@@ -54,6 +64,12 @@
 <script>
 window.onload=async function(){
     fillUserInfo();
+    
+    // 显示用户DID（核心优化）
+    const myDid = getUserDID();
+    document.getElementById("showUserDID").innerText = myDid || "未生成DID，请前往DID管理页面";
+
+    // 加载系统统计数据
     let res = await httpGet("/api/monitor/stats");
     if(res.code===200){
         document.getElementById("chainH").innerText=res.data.chain_height;
