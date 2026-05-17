@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DID身份 - 寰域链 V8.0</title>
+    <title>DID身份</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,65 +12,55 @@
             <h1 class="logo">寰域链 V8.0</h1>
             <button class="menu-toggle">☰</button>
             <nav>
-                <a href="index.html">首页存证</a>
-                <a href="personal_center.html">个人中心</a>
+                <a href="index.html">首页</a>
                 <a href="dashboard.html">管理面板</a>
+                <a href="personal_center.html">个人中心</a>
                 <a href="did_identity.html" class="active">DID身份</a>
                 <a href="video_cert.html">视频存证</a>
                 <a href="federated_privacy.html">隐私计算</a>
-                <a href="metaverse_asset.html">元宇宙NFT</a>
+                <a href="metaverse_asset.html">元宇宙资产</a>
                 <a href="gov_dashboard.html">政务中台</a>
             </nav>
-            <div id="userInfo" style="display: none;">
+            <div id="userInfo" style="display:none">
                 <span id="username"></span>
-                <button id="logoutBtn" class="btn-secondary" onclick="logout()">退出</button>
+                <button onclick="logout()">退出</button>
             </div>
         </div>
     </header>
-
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>我的DID身份</h3></div>
+            <div class="card-header"><h3>个人去中心化DID</h3></div>
             <div class="card-body">
-                <div id="didResult" style="word-break: break-all; margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 6px;">
-                    暂无DID身份，请点击生成
-                </div>
-                <button class="btn-primary" onclick="createUserDID()" style="margin-top: 10px;">生成专属DID身份</button>
+                <div id="didShow" style="padding:10px;background:#f5f5f5;word-break:break-all;">暂无DID</div>
+                <button class="btn-primary" style="margin-top:15px" onclick="createDid()">生成专属DID</button>
             </div>
         </div>
     </main>
+<script src="app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded',async function(){
+    if(!await verifyToken()){location.href="index.html";return;}
+    showUserInfo();
+    getMyDid();
+})
 
-    <script src="app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const isLogin = await verifyToken();
-            if (!isLogin) {
-                alert("请先登录！");
-                location.href = "index.html";
-                return;
-            }
-            showUserInfo();
-            loadExistDID();
-        });
+async function getMyDid(){
+    let res = await httpGet("/api/did/get");
+    if(res.code===200&&res.data.did_str){
+        didShow.innerText = res.data.did_str;
+    }
+}
 
-        async function loadExistDID(){
-            let res = await httpGet("/api/did/get");
-            if(res.code===200 && res.data.did_str){
-                didResult.innerText = res.data.did_str;
-            }
-        }
+async function createDid(){
+    let res = await httpPost("/api/did/create",{});
+    alert(res.msg);
+    location.reload();
+}
 
-        async function createUserDID(){
-            let res = await httpPost("/api/did/create",{});
-            alert(res.msg);
-            location.reload();
-        }
-
-        function showUserInfo(){
-            let u = JSON.parse(localStorage.getItem("userInfo")||"{}");
-            username.innerText = u.username||"";
-            userInfo.style.display = "block";
-        }
-    </script>
+function showUserInfo(){
+    let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
+    username.innerText=u.username;userInfo.style.display="block";
+}
+</script>
 </body>
 </html>
