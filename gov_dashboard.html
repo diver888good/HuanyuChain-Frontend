@@ -23,26 +23,68 @@
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>政务可信存证中台</h3></div>
-            <div class="card-body" id="govDataBox">加载中...</div>
+            <div class="card-header"><h3>政务项目管理</h3></div>
+            <div class="card-body">
+                <input type="text" id="project_name" placeholder="项目名称">
+                <input type="text" id="project_type" placeholder="项目类型">
+                <input type="text" id="budget" placeholder="预算金额">
+                <input type="text" id="dept_did" placeholder="部门DID">
+                <button class="btn-primary" onclick="createGovProject()">创建政务项目</button>
+                <div id="projectResult"></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+            <div class="card-header"><h3>务工工资上链</h3></div>
+            <div class="card-body">
+                <input type="text" id="worker_name" placeholder="工人姓名">
+                <input type="text" id="month" placeholder="月份 例：2025-12">
+                <input type="text" id="amount" placeholder="工资金额">
+                <input type="text" id="enterprise_did" placeholder="企业DID（可选）">
+                <button class="btn-primary" onclick="submitLaborWage()">工资上链</button>
+                <div id="wageResult"></div>
+            </div>
         </div>
     </main>
+
 <script src="app.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded',async function(){
-    if(!await verifyToken()){location.href="index.html";return;}
+    if(!await verifyToken()){
+        location.href="index.html";
+        return;
+    }
     showUserInfo();
-    loadGovData();
-})
+});
 
-async function loadGovData(){
-    let res = await httpGet("/api/gov/data");
-    govDataBox.innerText = res.msg||"政务数据加载完成";
+// 对接后端：/api/gov/project/create
+async function createGovProject(){
+    let data = {
+        project_name: document.getElementById("project_name").value.trim(),
+        project_type: document.getElementById("project_type").value.trim(),
+        budget: document.getElementById("budget").value.trim(),
+        dept_did: document.getElementById("dept_did").value.trim()
+    };
+    let res = await httpPost("/api/gov/project/create", data);
+    document.getElementById("projectResult").innerText = res.msg;
+}
+
+// 对接后端：/api/gov/labor/wage
+async function submitLaborWage(){
+    let data = {
+        worker_name: document.getElementById("worker_name").value.trim(),
+        month: document.getElementById("month").value.trim(),
+        amount: document.getElementById("amount").value.trim(),
+        enterprise_did: document.getElementById("enterprise_did").value.trim()
+    };
+    let res = await httpPost("/api/gov/labor/wage", data);
+    document.getElementById("wageResult").innerText = res.msg;
 }
 
 function showUserInfo(){
     let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
-    username.innerText=u.username;userInfo.style.display="block";
+    username.innerText=u.username;
+    userInfo.style.display="block";
 }
 </script>
 </body>
