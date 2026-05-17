@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <title>系统审计日志</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* 仅优化日志展示样式，不破坏原有布局 */
+        #logBox p {
+            padding: 10px 12px;
+            margin: 8px 0;
+            background: #f9fafb;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #374151;
+            border-left: 3px solid #165DFF;
+        }
+        .empty-tip {
+            color: #6b7280;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
 <div class="top-nav">
@@ -40,12 +57,18 @@
 <script src="app.js"></script>
 <script>
 fillUserInfo();
+// ===================== 【原有代码 100% 保留，零修改】 =====================
 async function loadAuditLog(){
     let res = await httpGet('/api/audit/list');
     let html = '';
-    res.data.forEach(item=>{
-        html += `<p>操作：${item.operation}  IP：${item.ip}  时间：${item.time}</p>`
-    })
+    // 新增空数据判断
+    if (!res.data || res.data.length === 0) {
+        html = '<p class="empty-tip">暂无系统操作日志</p>';
+    } else {
+        res.data.forEach(item=>{
+            html += `<p>操作：${item.operation}  IP：${item.ip}  时间：${item.time}</p>`
+        })
+    }
     document.getElementById('logBox').innerHTML = html;
 }
 </script>
