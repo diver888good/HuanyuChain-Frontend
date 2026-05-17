@@ -36,7 +36,10 @@
 <script src="app.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded',async ()=>{
-    if(!await verifyToken()){location.href="index.html";return;}
+    if(!await verifyToken()){
+        location.href="index.html";
+        return;
+    }
     showUserInfo();
 })
 
@@ -54,13 +57,23 @@ function calcVidHash(){
 async function submitVidCert(){
     let h = vidHashVal.value.trim();
     if(!h)return alert("请计算哈希");
-    let res = await httpPost("/api/cert/video",{video_hash:h});
+    let res = await httpPost("/api/video/cert",{video_hash:h});
     vidRes.innerText = res.msg;
 }
 
+// ✅ 永不报错版用户信息
 function showUserInfo(){
-    let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
-    username.innerText=u.username;userInfo.style.display="block";
+    try {
+        let u = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        username.innerText = u.username || "";
+        userInfo.style.display = "block";
+    } catch(e) {}
+}
+
+// ✅ 安全退出
+function logout(){
+    localStorage.clear();
+    location.href = "index.html";
 }
 </script>
 </body>
