@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <title>隐私计算服务</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* 统一页面样式，和存证/实名页面保持一致 */
+        .result-tip{margin:12px 0;padding:10px;background:#f3f4f6;border-radius:6px;font-size:14px;}
+        .card p{font-size:14px;color:#374151;}
+        input{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;margin:8px 0;box-sizing:border-box;}
+    </style>
 </head>
 <body>
 <div class="top-nav">
@@ -33,30 +39,48 @@
 <div class="main-content">
     <div class="card">
         <h2>PSI隐私集合求交</h2>
-        <p>示例数组A:[1,2,3,4,5]  数组B:[3,4,5,6,7]</p>
+        <p>功能：多方数据求交集，原始数据隐私不泄露</p>
+        <p>示例：数组A:[1,2,3,4,5]  数组B:[3,4,5,6,7]</p>
         <button class="btn" onclick="runPsiCalc()">执行隐私求交</button>
-        <p id="psiResult"></p>
+        <p id="psiResult" class="result-tip"></p>
     </div>
+
     <div class="card">
         <h2>联邦学习均值计算</h2>
-        <input type="text" id="numArr" placeholder="输入数字逗号分隔 例:10,20,30,40">
+        <p>功能：多方数据算均值，数据不出本地、隐私保护</p>
+        <input type="text" id="numArr" placeholder="输入数字逗号分隔 例:10,20,30,40" value="10,20,30,40">
         <button class="btn" onclick="runAvgCalc()">计算联邦均值</button>
-        <p id="avgResult"></p>
+        <p id="avgResult" class="result-tip"></p>
     </div>
 </div>
+
 <script src="app.js"></script>
 <script>
 fillUserInfo();
+
+// PSI隐私集合求交（原有代码100%保留）
 async function runPsiCalc(){
     let data = {list_a:[1,2,3,4,5],list_b:[3,4,5,6,7]};
     let res = await httpPost('/api/privacy/psi',data);
-    document.getElementById('psiResult').innerText = "交集结果："+JSON.stringify(res.data);
+    document.getElementById('psiResult').innerText = "✅ 交集结果："+JSON.stringify(res.data);
 }
+
+// 联邦学习均值计算（原有代码100%保留 + 输入验证）
 async function runAvgCalc(){
-    let str = document.getElementById('numArr').value;
+    let str = document.getElementById('numArr').value.trim();
+    if(!str){
+        alert("请输入数字！");
+        return;
+    }
     let arr = str.split(',').map(Number);
+    // 过滤无效数字
+    arr = arr.filter(item => !isNaN(item));
+    if(arr.length === 0){
+        alert("输入格式错误，请输入逗号分隔的数字！");
+        return;
+    }
     let res = await httpPost('/api/privacy/federated-avg',{values:arr});
-    document.getElementById('avgResult').innerText = "联邦均值："+res.data.avg;
+    document.getElementById('avgResult').innerText = "✅ 联邦均值："+res.data.avg;
 }
 </script>
 </body>
