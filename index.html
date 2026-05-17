@@ -79,7 +79,8 @@ async function userLogin(){
     let res = await httpPost("/api/auth/login",{username:u,password:p});
     if(res.code===200){
         localStorage.setItem("token",res.data.token);
-        localStorage.setItem("userInfo",JSON.stringify(res.data.user));
+        // 🔥 修复：防止 user 不存在导致 JSON 报错
+        localStorage.setItem("userInfo",JSON.stringify(res.data.user || {}));
         alert("登录成功");
         location.reload();
     }else{
@@ -119,10 +120,21 @@ async function checkCertInfo(){
     checkRes.innerText = res.msg;
 }
 
+// 🔥 修复：彻底解决 JSON.parse 报错
 function showUserInfo(){
-    let info = JSON.parse(localStorage.getItem("userInfo")||"{}");
-    username.innerText = info.username||"";
-    userInfo.style.display = "block";
+    try {
+        let info = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        username.innerText = info.username || "";
+        userInfo.style.display = "block";
+    } catch(e) {
+        // 出错不影响页面
+    }
+}
+
+// 🔥 修复：增加 logout 函数，防止报错
+function logout(){
+    localStorage.clear();
+    location.reload();
 }
 </script>
 </body>
