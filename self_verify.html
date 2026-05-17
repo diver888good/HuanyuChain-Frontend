@@ -19,7 +19,7 @@
             <div class="card-body">
                 <textarea id="srcContent" rows="5" placeholder="粘贴原始内容"></textarea>
                 <button onclick="makeLocalHash()">生成本地哈希</button>
-                <input type="text" id="localHash" readonly>
+                <input type="text" id="localHash" readonly placeholder="本地计算哈希值">
             </div>
         </div>
     </main>
@@ -27,7 +27,10 @@
 <script>
 function makeLocalHash(){
     let s = srcContent.value.trim();
-    if(!s)return;
+    if(!s) {
+        alert("请输入需要验签的内容");
+        return;
+    }
     localHash.value = CryptoJS.SHA256(s).toString();
 }
 </script>
