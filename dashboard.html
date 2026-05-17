@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理面板 - 寰域链 V8.0</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .stats-item { margin: 10px 0; font-size: 16px; }
-    </style>
 </head>
 <body>
     <header>
@@ -33,51 +30,47 @@
     <main class="container">
         <div class="card">
             <div class="card-header"><h3>系统统计</h3></div>
-            <div class="card-body" id="statsBox">
-                <div class="stats-item">📦 区块高度：0（本地模式）</div>
-                <div class="stats-item">📄 总存证数：<span id="totalCert">0</span></div>
-                <div class="stats-item">👤 总用户数：1（本地用户）</div>
-                <div class="stats-item">🆔 DID身份：<span id="hasDID">未生成</span></div>
-            </div>
+            <div class="card-body" id="statsBox">加载中...</div>
         </div>
     </main>
 
-    <!-- 纯本地代码，无任何外部依赖，零报错 -->
+    <script src="app.js"></script>
     <script>
-        // 页面加载完成执行
-        window.onload = function() {
-            // 1. 本地校验登录（无接口、无跳转死循环）
-            const token = localStorage.getItem("token");
-            if (!token) {
-                alert("请先登录！");
-                location.href = "index.html";
-                return;
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isLogin = await verifyToken();
+            if (isLogin) {
+                loadStats();
+                showUserInfo();
+            }else{
+                location.href="index.html";
             }
+        });
 
-            // 2. 显示用户信息
-            const userInfo = JSON.parse(localStorage.getItem("userInfo") || '{}');
-            document.getElementById("username").innerText = userInfo.username || "本地用户";
-            document.getElementById("userInfo").style.display = "block";
-
-            // 3. 加载本地统计数据
-            loadLocalStats();
-        };
-
-        // 读取本地存储统计数据
-        function loadLocalStats() {
-            // 存证总数
-            const certList = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
-            document.getElementById("totalCert").innerText = certList.length;
-
-            // DID状态
-            const didInfo = localStorage.getItem("MY_DID_INFO");
-            document.getElementById("hasDID").innerText = didInfo ? "已生成" : "未生成";
+        async function loadStats() {
+            try {
+                const data = await httpGet("/api/monitor/stats");
+                const statsBox = document.getElementById("statsBox");
+                if (data.code === 200) {
+                    const d = data.data;
+                    statsBox.innerHTML = `
+                        <p>📦 区块高度：${d.chain_height || 0}</p>
+                        <p>📄 总存证数：${d.total_cert || 0}</p>
+                        <p>👤 总用户数：${d.total_user || 0}</p>
+                    `;
+                } else {
+                    statsBox.innerHTML = `<p style="color:red;">${data.msg || '数据加载失败'}</p>`;
+                }
+            } catch (error) {
+                document.getElementById("statsBox").innerHTML = `<p style="color:red;">网络异常，获取统计数据失败</p>`;
+                console.error(error);
+            }
         }
 
-        // 退出登录
-        function logout() {
-            localStorage.clear();
-            location.href = "index.html";
+        // 补齐缺失函数
+        function showUserInfo(){
+            let u = JSON.parse(localStorage.getItem("userInfo")||"{}");
+            document.getElementById("username").innerText = u.username||"";
+            document.getElementById("userInfo").style.display = "block";
         }
     </script>
 </body>
