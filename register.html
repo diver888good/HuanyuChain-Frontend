@@ -28,10 +28,15 @@
 async function doRegister(){
     let u = regUser.value.trim();
     let p = regPwd.value.trim();
-    if(!u||!p)return alert("请填写完整信息");
-    let res = await httpPost("/api/auth/register",{username:u,password:p});
-    alert(res.msg);
-    if(res.code===200)location.href="index.html";
+    if(!u || !p) return alert("请填写完整信息");
+    
+    try {
+        let res = await httpPost("/api/auth/register", { username:u, password:p });
+        alert(res.msg || "注册成功");
+        if(res.code === 200) location.href = "index.html";
+    } catch(e) {
+        alert("注册请求异常");
+    }
 }
 </script>
 </body>
