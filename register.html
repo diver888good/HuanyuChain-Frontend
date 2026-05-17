@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户注册 - 寰域链V8.0</title>
+    <title>用户注册</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <div class="header-container">
-            <h1 class="logo">寰域链 V8.0</h1>
-            <nav>
-                <a href="index.html">返回首页</a>
-            </nav>
+            <h1 class="logo">寰域链注册</h1>
+            <a href="index.html">返回登录</a>
         </div>
     </header>
     <main class="container">
@@ -20,23 +18,21 @@
             <div class="card-header"><h3>新用户注册</h3></div>
             <div class="card-body">
                 <input type="text" id="regUser" placeholder="设置用户名">
-                <input type="password" id="regPwd" placeholder="设置登录密码">
-                <button class="btn-primary" onclick="userRegister()">立即注册</button>
+                <input type="password" id="regPwd" placeholder="设置密码">
+                <button class="btn-primary" onclick="doRegister()">提交注册</button>
             </div>
         </div>
     </main>
-    <script src="app.js"></script>
-    <script>
-        async function userRegister(){
-            let u = regUser.value.trim();
-            let p = regPwd.value.trim();
-            if(!u||!p){
-                return alert("请填写完整账号密码");
-            }
-            let res = await httpPost("/api/auth/register",{username:u,password:p});
-            alert(res.msg);
-            if(res.code===200) location.href="index.html";
-        }
-    </script>
+<script src="app.js"></script>
+<script>
+async function doRegister(){
+    let u = regUser.value.trim();
+    let p = regPwd.value.trim();
+    if(!u||!p)return alert("请填写完整信息");
+    let res = await httpPost("/api/auth/register",{username:u,password:p});
+    alert(res.msg);
+    if(res.code===200)location.href="index.html";
+}
+</script>
 </body>
 </html>
