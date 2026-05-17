@@ -23,46 +23,32 @@
             </nav>
             <div id="userInfo" style="display: none;">
                 <span id="username"></span>
-                <button class="btn-secondary" onclick="logout()">退出</button>
+                <button id="logoutBtn" class="btn-secondary" onclick="logout()">退出</button>
             </div>
         </div>
     </header>
-
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>政务中台</h3></div>
-            <div class="card-body">
-                <p>✅ 本地离线模式运行中</p>
-                <p>总存证数：<span id="totalCert">0</span></p>
-            </div>
+            <div class="card-header"><h3>全域智慧政务中台</h3></div>
+            <div class="card-body" id="govBox">加载中...</div>
         </div>
     </main>
-
+    <script src="app.js"></script>
     <script>
-        // 纯本地加载，无异步、无app.js、无任何外部函数
-        window.onload = function() {
-            // 登录校验
-            const token = localStorage.getItem("token");
-            if (!token) {
-                alert("请先登录！");
-                location.href = "index.html";
-                return;
-            }
-
-            // 渲染用户信息（替代showUserInfo）
-            const user = JSON.parse(localStorage.getItem("userInfo") || '{}');
-            document.getElementById("username").innerText = user.username || "本地用户";
-            document.getElementById("userInfo").style.display = "block";
-
-            // 统计数据
-            const certs = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
-            document.getElementById("totalCert").innerText = certs.length;
-        };
-
-        // 退出登录
-        function logout() {
-            localStorage.clear();
-            location.href = "index.html";
+        document.addEventListener('DOMContentLoaded',async ()=>{
+            let flag = await verifyToken();
+            if(!flag){location.href="index.html";return;}
+            showUserInfo();
+            loadGovData();
+        });
+        async function loadGovData(){
+            let res = await httpGet("/api/gov/data");
+            govBox.innerText = res.msg||"政务数据加载完成";
+        }
+        function showUserInfo(){
+            let u = JSON.parse(localStorage.getItem("userInfo")||"{}");
+            username.innerText = u.username||"";
+            userInfo.style.display = "block";
         }
     </script>
 </body>
