@@ -11,7 +11,7 @@ async function httpGet(url) {
         });
         return await res.json();
     } catch (e) {
-        return { code: 500, msg: "网络异常" };
+        return { code: 500, msg: "请求异常" };
     }
 }
 
@@ -27,7 +27,7 @@ async function httpPost(url, data) {
         });
         return await res.json();
     } catch (e) {
-        return { code: 500, msg: "网络异常" };
+        return { code: 500, msg: "请求异常" };
     }
 }
 
@@ -38,13 +38,22 @@ async function verifyToken() {
     return res.code === 200;
 }
 
-// 全局修复 showUserInfo
+// 🔥 全局修复，所有页面自动生效
 function showUserInfo() {
     try {
-        let info = JSON.parse(localStorage.getItem("userInfo") || "{}");
-        if (document.getElementById("username")) {
-            document.getElementById("username").innerText = info.username || "";
-            document.getElementById("userInfo").style.display = "block";
-        }
+        let userStr = localStorage.getItem("userInfo");
+        if (!userStr) return;
+        let info = JSON.parse(userStr);
+        let userElem = document.getElementById("username");
+        let boxElem = document.getElementById("userInfo");
+        if (userElem) userElem.innerText = info.username || "";
+        if (boxElem) boxElem.style.display = "block";
     } catch (e) {}
 }
+
+// 自动执行
+document.addEventListener("DOMContentLoaded", async () => {
+    if (await verifyToken()) {
+        showUserInfo();
+    }
+});
