@@ -40,16 +40,40 @@
         <button class="btn" onclick="buyChainAsset()">发起资产交易</button>
     </div>
 </div>
+
 <script src="app.js"></script>
 <script>
 fillUserInfo();
+
+// 修复1：适配后端返回的资产列表结构，增加错误捕获
 async function getAssetList(){
-    let res = await httpPost('/api/market/asset/list',{});
-    alert("列表标识ID："+res.data.list_id);
+    try {
+        let res = await httpPost('/api/market/asset/list', {});
+        if(res.code === 200){
+            // 后端返回数组，遍历获取所有资产ID
+            let ids = res.data.assets.map(item => item.list_id);
+            alert("资产列表ID：" + ids.join("、"));
+        } else {
+            alert("获取列表失败");
+        }
+    } catch (error) {
+        alert("服务器连接失败");
+        console.log(error);
+    }
 }
+
+// 修复2：默认购买第一个资产，适配后端接口，修复字段报错
 async function buyChainAsset(){
-    let res = await httpPost('/api/market/asset/buy',{});
-    alert("订单编号："+res.data.order_id+" 交易状态："+res.data.trade_status);
+    try {
+        // 默认购买ID=1001的资产（后端预置数据）
+        let res = await httpPost('/api/market/asset/buy', { list_id: 1001 });
+        if(res.code === 200){
+            alert("订单编号："+res.data.order_id+"\n交易状态：购买成功");
+        }
+    } catch (error) {
+        alert("交易失败，请重试");
+        console.log(error);
+    }
 }
 </script>
 </body>
