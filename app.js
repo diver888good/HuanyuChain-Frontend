@@ -3,11 +3,7 @@ const API_BASE = "https://huanyuchain.pythonanywhere.com";
 async function httpGet(url) {
     try {
         let res = await fetch(API_BASE + url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": localStorage.getItem("token") || ""
-            }
+            headers: { "Content-Type": "application/json", "Authorization": localStorage.getItem("token") || "" }
         });
         return await res.json();
     } catch (e) {
@@ -19,10 +15,7 @@ async function httpPost(url, data) {
     try {
         let res = await fetch(API_BASE + url, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": localStorage.getItem("token") || ""
-            },
+            headers: { "Content-Type": "application/json", "Authorization": localStorage.getItem("token") || "" },
             body: JSON.stringify(data)
         });
         return await res.json();
@@ -38,22 +31,16 @@ async function verifyToken() {
     return res.code === 200;
 }
 
-// 🔥 全局修复，所有页面自动生效
 function showUserInfo() {
     try {
-        let userStr = localStorage.getItem("userInfo");
-        if (!userStr) return;
-        let info = JSON.parse(userStr);
-        let userElem = document.getElementById("username");
-        let boxElem = document.getElementById("userInfo");
-        if (userElem) userElem.innerText = info.username || "";
-        if (boxElem) boxElem.style.display = "block";
+        let user = JSON.parse(localStorage.getItem("userInfo"));
+        if (user && document.getElementById("username")) {
+            document.getElementById("username").innerText = user.username;
+            document.getElementById("userInfo").style.display = "flex";
+        }
     } catch (e) {}
 }
 
-// 自动执行
 document.addEventListener("DOMContentLoaded", async () => {
-    if (await verifyToken()) {
-        showUserInfo();
-    }
+    if (await verifyToken()) showUserInfo();
 });
