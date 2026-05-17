@@ -3,147 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>本人专属身份核验 - 寰域链 V8.0</title>
+    <title>自主验签</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* 统一项目全局样式 */
-        .result { margin: 15px 0; padding: 12px 15px; border-radius: 6px; line-height: 1.5; font-size: 14px; }
-        .alert-success { background: #e6f7e6; color: #006600; border: 1px solid #c1eac1; }
-        .alert-danger { background: #fff0f0; color: #cc0000; border: 1px solid #ffc9c9; }
-        .auth-box{
-            max-width:600px;
-            margin:50px auto;
-            padding:25px;
-            background:#fff;
-            border-radius:10px;
-            box-shadow:0 0 10px #eee;
-        }
-        .item{margin:15px 0;}
-        input,textarea{
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        .btn{
-            padding: 12px 25px;
-            border: none;
-            border-radius: 6px;
-            color: #fff;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
-        }
-        .btn-primary{background:#2385ee;}
-    </style>
 </head>
 <body>
-    <!-- 统一全局头部导航 -->
     <header>
         <div class="header-container">
-            <h1 class="logo">寰域链 V8.0</h1>
-            <button class="menu-toggle">☰</button>
-            <nav>
-                <a href="index.html">首页存证</a>
-                <a href="did_identity.html">DID身份</a>
-                <a href="personal_center.html">个人中心</a>
-            </nav>
-            <div id="userInfo" style="display: none;">
-                <span id="username"></span>
-                <button id="logoutBtn" class="btn-secondary">退出</button>
-            </div>
+            <h1 class="logo">本地自主验签</h1>
+            <a href="index.html">返回首页</a>
         </div>
     </header>
-
-    <div class="auth-box">
-        <h3>🔒 本人私密信息核验（仅本人可通过）</h3>
-        <p>请填写实名认证时的**预留真实信息**完成身份确认，用于高权限存证操作</p>
-
-        <div class="item">
-            <input type="text" id="vName" placeholder="请输入实名认证真实姓名">
+    <main class="container">
+        <div class="card">
+            <div class="card-header"><h3>离线自主哈希核验</h3></div>
+            <div class="card-body">
+                <textarea id="srcContent" rows="5" placeholder="粘贴原始内容"></textarea>
+                <button onclick="makeLocalHash()">生成本地哈希</button>
+                <input type="text" id="localHash" readonly>
+            </div>
         </div>
-        <div class="item">
-            <input type="text" id="vPhone" placeholder="请输入实名认证预留手机号">
-        </div>
-        <div class="item">
-            <input type="text" id="vIdcard" placeholder="请输入实名认证身份证号码">
-        </div>
-        <div class="item">
-            <input type="date" id="vBirth">
-        </div>
-        <div class="item">
-            <textarea id="vAddr" rows="2" placeholder="请输入实名认证常住详细住址"></textarea>
-        </div>
-
-        <button class="btn btn-primary" onclick="checkSelfInfo()" id="verifyBtn">提交核验</button>
-        <div id="verifyTip" class="result" style="margin-top:20px;"></div>
-    </div>
-
-    <script src="app.js"></script>
-    <script>
-        // 页面初始化：登录校验
-        document.addEventListener('DOMContentLoaded', async () => {
-            const isLogin = await verifyToken();
-            if (!isLogin) {
-                location.href = "login.html";
-                return;
-            }
-            // 显示顶部用户信息
-            showUserInfo();
-        });
-
-        // 本人身份核验（优化版：输入校验+防重复+异常捕获）
-        async function checkSelfInfo(){
-            const btn = document.getElementById("verifyBtn");
-            const tip = document.getElementById("verifyTip");
-            
-            // 获取表单数据
-            const real_name = document.getElementById("vName").value.trim();
-            const phone = document.getElementById("vPhone").value.trim();
-            const id_card = document.getElementById("vIdcard").value.trim();
-            const birth_date = document.getElementById("vBirth").value.trim();
-            const address = document.getElementById("vAddr").value.trim();
-
-            // 前端基础校验
-            if (!real_name || !phone || !id_card || !birth_date || !address) {
-                tip.className = "result alert-danger";
-                tip.innerText = "❌ 请填写完整所有核验信息！";
-                return;
-            }
-
-            // 防重复点击
-            btn.disabled = true;
-            btn.innerText = "核验中...";
-
-            try {
-                // 调用后端核验接口
-                const res = await httpPost("/api/auth/self-info-verify", {
-                    real_name, phone, id_card, birth_date, address
-                });
-
-                if(res.verify_result){
-                    tip.className = "result alert-success";
-                    tip.innerText = "✅ 身份核验通过，确认为本账号实际使用人！";
-                    // 核验成功后跳转视频存证/高权限页面（可自定义）
-                    setTimeout(() => {
-                        location.href = "video_cert.html";
-                    }, 1500);
-                }else{
-                    tip.className = "result alert-danger";
-                    tip.innerText = "❌ 信息不符，核验失败，非本人无法操作！";
-                }
-            } catch (error) {
-                tip.className = "result alert-danger";
-                tip.innerText = "❌ 网络异常，核验失败，请重试！";
-                console.error("身份核验异常：", error);
-            } finally {
-                // 恢复按钮
-                btn.disabled = false;
-                btn.innerText = "提交核验";
-            }
-        }
-    </script>
+    </main>
+<script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+<script>
+function makeLocalHash(){
+    let s = srcContent.value.trim();
+    if(!s)return;
+    localHash.value = CryptoJS.SHA256(s).toString();
+}
+</script>
 </body>
 </html>
