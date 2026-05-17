@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>隐私计算服务</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="top-nav">
+    <div class="logo">寰域链 V8.0 管理后台</div>
+    <div class="user-info">
+        <span id="userName">管理员</span>
+        <span class="logout-btn" onclick="userLogout()">退出登录</span>
+    </div>
+</div>
+<div class="side-bar">
+    <a href="dashboard.html">系统首页</a>
+    <a href="realname.html">实名身份备案</a>
+    <a href="cert.html">链上数据存证</a>
+    <a href="did.html">DID身份管理</a>
+    <a href="video.html">视频司法存证</a>
+    <a href="gov.html">政务台账上链</a>
+    <a href="meta.html">元宇宙&NFT</a>
+    <a href="privacy.html" class="active">隐私计算服务</a>
+    <a href="judicial.html">司法存证报告</a>
+    <a href="audit.html">系统审计日志</a>
+    <a href="cross.html">跨链互通服务</a>
+    <a href="contract.html">智能合约管理</a>
+    <a href="iot.html">IoT设备存证</a>
+    <a href="market.html">数字资产市场</a>
+    <a href="ai.html">AI智能对话</a>
+</div>
+<div class="main-content">
+    <div class="card">
+        <h2>PSI隐私集合求交</h2>
+        <p>示例数组A:[1,2,3,4,5]  数组B:[3,4,5,6,7]</p>
+        <button class="btn" onclick="runPsiCalc()">执行隐私求交</button>
+        <p id="psiResult"></p>
+    </div>
+    <div class="card">
+        <h2>联邦学习均值计算</h2>
+        <input type="text" id="numArr" placeholder="输入数字逗号分隔 例:10,20,30,40">
+        <button class="btn" onclick="runAvgCalc()">计算联邦均值</button>
+        <p id="avgResult"></p>
+    </div>
+</div>
+<script src="app.js"></script>
+<script>
+fillUserInfo();
+async function runPsiCalc(){
+    let data = {list_a:[1,2,3,4,5],list_b:[3,4,5,6,7]};
+    let res = await httpPost('/api/privacy/psi',data);
+    document.getElementById('psiResult').innerText = "交集结果："+JSON.stringify(res.data);
+}
+async function runAvgCalc(){
+    let str = document.getElementById('numArr').value;
+    let arr = str.split(',').map(Number);
+    let res = await httpPost('/api/privacy/federated-avg',{values:arr});
+    document.getElementById('avgResult').innerText = "联邦均值："+res.data.avg;
+}
+</script>
+</body>
+</html>

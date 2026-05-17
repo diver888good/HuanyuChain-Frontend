@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>政务台账上链</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="top-nav">
+    <div class="logo">寰域链 V8.0 管理后台</div>
+    <div class="user-info">
+        <span id="userName">管理员</span>
+        <span class="logout-btn" onclick="userLogout()">退出登录</span>
+    </div>
+</div>
+<div class="side-bar">
+    <a href="dashboard.html">系统首页</a>
+    <a href="realname.html">实名身份备案</a>
+    <a href="cert.html">链上数据存证</a>
+    <a href="did.html">DID身份管理</a>
+    <a href="video.html">视频司法存证</a>
+    <a href="gov.html" class="active">政务台账上链</a>
+    <a href="meta.html">元宇宙&NFT</a>
+    <a href="privacy.html">隐私计算服务</a>
+    <a href="judicial.html">司法存证报告</a>
+    <a href="audit.html">系统审计日志</a>
+    <a href="cross.html">跨链互通服务</a>
+    <a href="contract.html">智能合约管理</a>
+    <a href="iot.html">IoT设备存证</a>
+    <a href="market.html">数字资产市场</a>
+    <a href="ai.html">AI智能对话</a>
+</div>
+<div class="main-content">
+    <div class="card">
+        <h2>政务项目创建上链</h2>
+        <input type="text" id="projName" placeholder="项目名称">
+        <input type="text" id="projType" placeholder="项目类型">
+        <input type="text" id="projBudget" placeholder="项目预算">
+        <input type="text" id="deptDid" placeholder="部门机构DID">
+        <button class="btn" onclick="createGovProj()">创建项目</button>
+    </div>
+    <div class="card">
+        <h2>务工人员工资台账上链</h2>
+        <input type="text" id="workerName" placeholder="务工人员姓名">
+        <input type="text" id="workMonth" placeholder="发放月份">
+        <input type="text" id="salaryNum" placeholder="工资金额">
+        <input type="text" id="entDid" placeholder="企业DID">
+        <button class="btn" onclick="addWageRecord()">提交工资台账</button>
+    </div>
+</div>
+<script src="app.js"></script>
+<script>
+fillUserInfo();
+async function createGovProj(){
+    let data = {
+        project_name:document.getElementById('projName').value,
+        project_type:document.getElementById('projType').value,
+        budget:document.getElementById('projBudget').value,
+        dept_did:document.getElementById('deptDid').value
+    }
+    let res = await httpPost('/api/gov/project/create',data);
+    alert(res.msg+" 项目ID："+res.data.project_id);
+}
+async function addWageRecord(){
+    let data = {
+        worker_name:document.getElementById('workerName').value,
+        month:document.getElementById('workMonth').value,
+        amount:document.getElementById('salaryNum').value,
+        enterprise_did:document.getElementById('entDid').value
+    }
+    let res = await httpPost('/api/gov/labor/wage',data);
+    alert(res.msg+" 台账ID："+res.data.wage_id);
+}
+</script>
+</body>
+</html>
