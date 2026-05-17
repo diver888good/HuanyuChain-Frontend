@@ -50,114 +50,103 @@
                 <input type="file" id="certFile">
                 <button class="btn-primary" onclick="getHashFromFile()" id="fileHashBtn">文件生成哈希</button>
 
-                <input type="text" id="fileHash" placeholder="自动生成的SM3哈希值" readonly>
-                <textarea id="metaInfo" rows="3" placeholder="元数据"></textarea>
-                <button class="btn-primary" onclick="submitCert()" id="submitBtn">提交存证</button>
-                <div id="certResult" class="result"></div>
+                <input type="text" id="fileHash" placeholder="自动生成哈希值" readonly>
+                <textarea id="metaInfo" rows="2" placeholder="填写存证元数据"></textarea>
+                <button class="btn-primary" onclick="submitCertData()" id="submitBtn">提交存证上链</button>
+                <div id="certResult" class="result-box"></div>
             </div>
         </div>
 
         <div class="card" id="verifyCard" style="display:none;">
-            <div class="card-header"><h3>存证验证</h3></div>
+            <div class="card-header"><h3>存证核验</h3></div>
             <div class="card-body">
-                <input type="text" id="verifyHash" placeholder="哈希查询">
-                <button class="btn-primary" onclick="verifyHash()" id="verifyBtn">验证</button>
-                <div id="verifyResult" class="result"></div>
+                <input type="text" id="verifyHash" placeholder="输入存证哈希/ID">
+                <button class="btn-primary" onclick="checkCert()">核验存证</button>
+                <div id="verifyResult" class="result-box"></div>
             </div>
         </div>
     </main>
 
-    <!-- 彻底独立，无外部依赖，零报错 -->
+    <script src="app.js"></script>
     <script>
-        // 页面加载完成后执行，无函数未定义问题
-        window.onload = () => {
-            const token = localStorage.getItem("token");
-            if (token) {
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isLogin = await verifyToken();
+            if (isLogin) {
                 loginCard.style.display = "none";
                 certCard.style.display = "block";
                 verifyCard.style.display = "block";
-                // 本地渲染用户信息，不依赖外部函数
-                const user = JSON.parse(localStorage.getItem("userInfo") || '{}');
-                document.getElementById("username").innerText = user.username || "用户";
-                document.getElementById("userInfo").style.display = "block";
+                showUserInfo();
             }
-        };
+        });
 
-        // 纯本地登录
-        function login() {
-            const user = document.getElementById("loginUser").value.trim();
-            const pwd = document.getElementById("loginPwd").value.trim();
-
+        // 后端登录接口
+        async function login() {
+            let user = loginUser.value.trim();
+            let pwd = loginPwd.value.trim();
             if (!user || !pwd) {
-                alert("❌ 请输入用户名和密码！");
+                alert("请输入完整账号密码");
                 return;
             }
-
-            localStorage.setItem("token", "offline-token");
-            localStorage.setItem("userInfo", JSON.stringify({ username: user }));
-            alert("✅ 登录成功！");
-            location.reload();
-        }
-
-        // 退出登录
-        function logout() {
-            localStorage.clear();
-            location.reload();
+            try {
+                let res = await httpPost("/api/auth/login", {username:user,password:pwd});
+                if(res.code === 200){
+                    localStorage.setItem("token",res.data.token);
+                    localStorage.setItem("userInfo",JSON.stringify(res.data.user));
+                    alert("登录成功");
+                    location.reload();
+                }else{
+                    alert(res.msg||"登录失败");
+                }
+            }catch(e){
+                alert("网络异常，请求后端失败");
+            }
         }
 
         // 文本哈希
-        function getHashFromText() {
-            const text = document.getElementById("certText").value.trim();
-            if (!text) { alert("❌ 请输入存证文本！"); return; }
-            document.getElementById("fileHash").value = CryptoJS.SHA256(text).toString();
-            alert("✅ 哈希生成成功！");
+        function getHashFromText(){
+            let txt = certText.value.trim();
+            if(!txt)return alert("请输入文本内容");
+            fileHash.value = CryptoJS.SHA256(txt).toString();
         }
 
         // 文件哈希
-        function getHashFromFile() {
-            const file = document.getElementById("certFile").files[0];
-            if (!file) { alert("❌ 请选择文件！"); return; }
-            
-            const reader = new FileReader();
-            reader.readAsArrayBuffer(file);
-            reader.onload = (e) => {
-                const wordArray = CryptoJS.lib.WordArray.create(e.target.result);
-                document.getElementById("fileHash").value = CryptoJS.SHA256(wordArray).toString();
-                alert("✅ 哈希生成成功！");
-            };
+        function getHashFromFile(){
+            let f = certFile.files[0];
+            if(!f)return alert("请选择文件");
+            let reader = new FileReader();
+            reader.readAsArrayBuffer(f);
+            reader.onload = e=>{
+                let word = CryptoJS.lib.WordArray.create(e.target.result);
+                fileHash.value = CryptoJS.SHA256(word).toString();
+            }
         }
 
-        // 本地存证
-        function submitCert() {
-            const hash = document.getElementById("fileHash").value.trim();
-            if (!hash) { alert("❌ 请先生成哈希值！"); return; }
-
-            const recordId = "HC-" + Date.now();
-            const certRecords = JSON.parse(localStorage.getItem("MY_CERTS") || "[]");
-            
-            certRecords.unshift({
-                type: "文件/文本存证",
-                hash: recordId,
-                time: new Date().toLocaleString()
-            });
-            localStorage.setItem("MY_CERTS", JSON.stringify(certRecords));
-
-            document.getElementById("certResult").className = "result alert-success";
-            document.getElementById("certResult").innerText = `✅ 存证成功！\n📝 存证ID：${recordId}\n⚠️ 记录已保存至【个人中心】`;
-            
-            document.getElementById("certText").value = "";
-            document.getElementById("certFile").value = "";
-            document.getElementById("fileHash").value = "";
-            document.getElementById("metaInfo").value = "";
+        // 提交存证到后端
+        async function submitCertData(){
+            let hash = fileHash.value.trim();
+            let meta = metaInfo.value.trim();
+            if(!hash)return alert("请先生成哈希值");
+            try{
+                let res = await httpPost("/api/cert/add",{hash_value:hash,meta_data:meta});
+                certResult.innerText = res.msg;
+            }catch(e){
+                certResult.innerText = "提交失败，后端连接异常";
+            }
         }
 
-        // 本地验证
-        function verifyHash() {
-            const hash = document.getElementById("verifyHash").value.trim();
-            if (!hash) { alert("❌ 请输入哈希值！"); return; }
+        // 核验存证
+        async function checkCert(){
+            let key = verifyHash.value.trim();
+            if(!key)return;
+            let res = await httpGet(`/api/cert/query?key=${key}`);
+            verifyResult.innerText = res.msg||"暂无数据";
+        }
 
-            document.getElementById("verifyResult").className = "result alert-success";
-            document.getElementById("verifyResult").innerText = `✅ 验证通过\n⏰ 时间：${new Date().toLocaleString()}`;
+        // 补齐缺失函数 仅消报错 不动任何业务
+        function showUserInfo(){
+            let u = JSON.parse(localStorage.getItem("userInfo")||"{}");
+            document.getElementById("username").innerText = u.username||"";
+            document.getElementById("userInfo").style.display = "block";
         }
     </script>
 </body>
