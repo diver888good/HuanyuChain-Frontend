@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>视频司法存证</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* 仅新增极简样式，不破坏原有布局 */
+        .video-upload{margin: 15px 0;}
+        .hash-btn{margin: 8px 0;background:#165DFF;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;}
+    </style>
 </head>
 <body>
 <div class="top-nav">
@@ -33,15 +38,26 @@
 <div class="main-content">
     <div class="card">
         <h2>视频双哈希司法存证（需实名+绑定DID）</h2>
+
+        <!-- ===================== 【新增】视频上传控件 ===================== -->
+        <div class="video-upload">
+            <input type="file" id="videoFile" accept="video/*" placeholder="上传视频文件">
+            <button class="hash-btn" onclick="generateVideoHash()">生成双哈希值</button>
+        </div>
+
+        <!-- 原有输入框（完全保留，自动填充） -->
         <input type="text" id="videoDid" placeholder="用户绑定DID">
         <input type="text" id="fastHash" placeholder="快速帧哈希">
         <input type="text" id="fullHash" placeholder="司法级完整文件哈希">
         <button class="btn" onclick="videoChainCert()">提交存证</button>
     </div>
 </div>
+
 <script src="app.js"></script>
 <script>
 fillUserInfo();
+
+// ===================== 【原有代码 100%保留】 =====================
 async function videoChainCert(){
     let data = {
         did: document.getElementById('videoDid').value,
@@ -50,6 +66,42 @@ async function videoChainCert(){
     }
     let res = await httpPost('/api/video/cert',data);
     alert(res.msg);
+}
+
+// ===================== 【新增】视频双哈希生成（自动填充） =====================
+async function generateVideoHash() {
+    const fileInput = document.getElementById('videoFile');
+    const file = fileInput.files[0];
+    if (!file) {
+        alert("请先上传视频文件！");
+        return;
+    }
+
+    // 自动填充本地存储的DID（匹配实名/DID页面）
+    try {
+        const userInfo = JSON.parse(localStorage.userInfo);
+        if(userInfo.main_did){
+            document.getElementById('videoDid').value = userInfo.main_did;
+        }
+    } catch (e) {}
+
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+        const buffer = e.target.result;
+        // 1. 生成司法级完整文件哈希（SHA256）
+        const fullHashBuffer = await crypto.subtle.digest('SHA-256', new Uint8Array(buffer));
+        const fullHash = Array.from(new Uint8Array(fullHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        
+        // 2. 生成快速帧哈希（简化哈希，用于快速核验）
+        const fastHashBuffer = await crypto.subtle.digest('SHA-1', new Uint8Array(buffer.slice(0, 1024*1024)));
+        const fastHash = Array.from(new Uint8Array(fastHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // 自动填充到输入框
+        document.getElementById('fastHash').value = fastHash;
+        document.getElementById('fullHash').value = fullHash;
+        alert("双哈希生成成功！已自动填充");
+    };
+    reader.readAsArrayBuffer(file);
 }
 </script>
 </body>
