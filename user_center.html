@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>个人用户中心</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#f6f8fa;}
+        .top-nav{height:60px;background:#165DFF;display:flex;align-items:center;padding:0 40px;}
+        .nav-title{color:#fff;font-size:18px;flex:1;}
+        .user-info{color:#fff;}
+        .logout{margin-left:20px;cursor:pointer;}
+        .main{max-width:1000px;margin:30px auto;padding:20px;}
+        .card{background:#fff;padding:25px;border-radius:10px;margin:20px 0;}
+        h3{color:#165DFF;margin-bottom:15px;}
+        .item{margin:8px 0;color:#444;}
+        .btn{background:#165DFF;color:#fff;border:none;padding:8px 18px;border-radius:6px;text-decoration:none;display:inline-block;margin:5px;}
+        .cert-item{padding:12px;border-bottom:1px solid #eee;margin:10px 0;}
+        .yes{color:green;}
+        .no{color:red;}
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <div class="nav-title">个人用户中心</div>
+        <div class="user-info">
+            欢迎您：<span id="uname"></span>
+            <span class="logout" onclick="userLogout()">退出登录</span>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="card">
+            <h3>我的账号信息</h3>
+            <div class="item">用户ID：<span id="uid"></span></div>
+            <div class="item">个人DID身份：<span id="mydid"></span></div>
+            <div class="item">实名状态：<span id="realstate"></span></div>
+            <a href="user_realname.html" class="btn">前往完成强实名</a>
+            <a href="user_cert.html" class="btn">提交文件存证</a>
+            <a href="user_video.html" class="btn">提交视频存证</a>
+        </div>
+
+        <div class="card">
+            <h3>我的全部链上存证记录</h3>
+            <button class="btn" onclick="getMyCert()">刷新记录</button>
+            <div id="mylist"></div>
+        </div>
+
+        <div class="card">
+            <h3>证据自主核验</h3>
+            <input style="width:100%;padding:10px;margin:10px 0;" id="vhash" placeholder="输入存证哈希验真">
+            <button class="btn" onclick="checkHash()">立即核验</button>
+            <p id="restext"></p>
+        </div>
+    </div>
+
+<script src="app.js"></script>
+<script>
+let user = JSON.parse(localStorage.userInfo);
+document.getElementById('uname').innerText = user.username;
+document.getElementById('uid').innerText = user.user_id;
+document.getElementById('mydid').innerText = user.main_did||"暂未生成";
+if(user.auth_status=="full"){
+    document.getElementById('realstate').innerHTML='<span class="yes">已终身实名锁定</span>';
+}else{
+    document.getElementById('realstate').innerHTML='<span class="no">未完成实名</span>';
+}
+
+function userLogout(){
+    localStorage.removeItem("userInfo");
+    location.href="login.html";
+}
+
+async function getMyCert(){
+    let res = await httpGet("/api/cert/userlist");
+    let html="";
+    if(res.data.length==0){
+        html="<p>暂无个人存证数据</p>";
+    }else{
+        res.data.forEach(v=>{
+            html+=`<div class="cert-item">
+                <p>标题：${v.title}</p>
+                <p>存证哈希：${v.hash}</p>
+                <p>提交时间：${v.time}</p>
+            </div>`;
+        })
+    }
+    document.getElementById('mylist').innerHTML=html;
+}
+
+async function checkHash(){
+    let h = document.getElementById('vhash').value;
+    let res = await httpGet(`/api/cert/query?hash=${h}`);
+    if(res.code==200){
+        document.getElementById('restext').innerText="✅ 核验通过，证据真实有效未篡改";
+        document.getElementById('restext').style.color="green";
+    }else{
+        document.getElementById('restext').innerText="❌ 核验失败，数据异常";
+        document.getElementById('restext').style.color="red";
+    }
+</script>
+</body>
+</html>

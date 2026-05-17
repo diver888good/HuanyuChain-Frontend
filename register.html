@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>用户注册</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#f6f8fa;}
+        .reg-box{width:400px;background:#fff;margin:80px auto;padding:40px;border-radius:10px;}
+        h2{text-align:center;color:#165DFF;margin-bottom:30px;}
+        input{width:100%;padding:12px;margin:10px 0;border:1px solid #ddd;border-radius:6px;}
+        .reg-btn{width:100%;background:#165DFF;color:#fff;border:none;padding:12px;border-radius:6px;margin-top:15px;cursor:pointer;}
+        .tip{text-align:center;margin-top:20px;}
+        a{color:#165DFF;text-decoration:none;}
+    </style>
+</head>
+<body>
+    <div class="reg-box">
+        <h2>免费注册账号</h2>
+        <input type="text" id="regUser" placeholder="设置登录账号">
+        <input type="password" id="regPwd" placeholder="设置登录密码">
+        <button class="reg-btn" onclick="userReg()">完成注册</button>
+        <div class="tip">已有账号？<a href="login.html">前往登录</a></div>
+    </div>
+
+<script src="app.js"></script>
+<script>
+async function userReg(){
+    let username = document.getElementById('regUser').value;
+    let password = document.getElementById('regPwd').value;
+    if(!username||!password){
+        alert("请填写完整信息");
+        return;
+    }
+    let res = await httpPost('/api/auth/register',{username,password});
+    if(res.code===200){
+        alert("注册成功，请前往登录");
+        location.href="login.html";
+    }else{
+        alert(res.msg);
+    }
+}
+</script>
+</body>
+</html>

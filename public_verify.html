@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>全网公开证据真伪核验</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#f6f8fa;}
+        .top-nav{height:60px;background:#165DFF;display:flex;align-items:center;padding:0 40px;}
+        .nav-title{color:#fff;font-size:18px;}
+        .main{max-width:600px;margin:80px auto;text-align:center;}
+        .card{background:#fff;padding:40px;border-radius:10px;}
+        h2{color:#165DFF;margin-bottom:20px;}
+        input{width:100%;padding:12px;border:1px solid #ddd;border-radius:6px;margin-bottom:20px;}
+        .btn{background:#165DFF;color:#fff;border:none;padding:12px 30px;border-radius:6px;cursor:pointer;}
+        #res{margin-top:20px;font-size:16px;}
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <div class="nav-title">寰域链 公开证据核验平台</div>
+    </div>
+    <div class="main">
+        <div class="card">
+            <h2>无需登录 · 全网证据真伪查验</h2>
+            <input type="text" id="p_hash" placeholder="粘贴链上存证哈希值">
+            <button class="btn" onclick="pubCheck()">一键核验真伪</button>
+            <div id="res"></div>
+        </div>
+    </div>
+
+<script src="app.js"></script>
+<script>
+async function pubCheck(){
+    let h = document.getElementById('p_hash').value.trim();
+    if(!h)return alert("请输入哈希值");
+    let res = await httpGet(`/api/cert/query?hash=${h}`);
+    let box = document.getElementById('res');
+    if(res.code===200){
+        box.innerText="✅ 核验成功：该证据真实有效，未被篡改，具备司法效力";
+        box.style.color="green";
+    }else{
+        box.innerText="❌ 核验失败：证据不存在或已被篡改";
+        box.style.color="red";
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>用户登录</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#f6f8fa;}
+        .login-box{width:400px;background:#fff;margin:80px auto;padding:40px;border-radius:10px;}
+        h2{text-align:center;color:#165DFF;margin-bottom:30px;}
+        input{width:100%;padding:12px;margin:10px 0;border:1px solid #ddd;border-radius:6px;}
+        .login-btn{width:100%;background:#165DFF;color:#fff;border:none;padding:12px;border-radius:6px;margin-top:15px;cursor:pointer;}
+        .tip{text-align:center;margin-top:20px;}
+        a{color:#165DFF;text-decoration:none;}
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>用户登录</h2>
+        <input type="text" id="username" placeholder="请输入账号">
+        <input type="password" id="password" placeholder="请输入密码">
+        <button class="login-btn" onclick="userLogin()">立即登录</button>
+        <div class="tip">暂无账号？<a href="register.html">立即注册</a></div>
+    </div>
+
+<script src="app.js"></script>
+<script>
+async function userLogin(){
+    let username = document.getElementById('username').value;
+    let password = document.getElementById('password').value;
+    if(!username||!password){
+        alert("请填写完整账号密码");
+        return;
+    }
+    let res = await httpPost('/api/auth/login',{username,password});
+    if(res.code===200){
+        localStorage.userInfo = JSON.stringify(res.data);
+        alert("登录成功");
+        location.href="user_center.html";
+    }else{
+        alert(res.msg);
+    }
+}
+</script>
+</body>
+</html>

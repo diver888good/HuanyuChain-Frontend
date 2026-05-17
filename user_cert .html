@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>个人文件链上存证</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#f6f8fa;}
+        .top-nav{height:60px;background:#165DFF;display:flex;align-items:center;padding:0 40px;}
+        .nav-title{color:#fff;font-size:18px;flex:1;}
+        .back{color:#fff;text-decoration:none;}
+        .main{max-width:700px;margin:30px auto;padding:20px;}
+        .card{background:#fff;padding:25px;border-radius:10px;}
+        h3{color:#165DFF;margin-bottom:15px;}
+        input,textarea{width:100%;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:6px;}
+        .btn{background:#165DFF;color:#fff;border:none;padding:10px 20px;border-radius:6px;margin:8px 5px;cursor:pointer;}
+        .hash-box{background:#f5f5f5;padding:10px;border-radius:6px;word-break:break-all;}
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <div class="nav-title">个人文件&文本链上存证</div>
+        <a href="user_center.html" class="back">返回个人中心</a>
+    </div>
+    <div class="main">
+        <div class="card">
+            <h3>上传文件自动生成哈希上链</h3>
+            <input type="text" id="ctitle" placeholder="存证标题">
+            <textarea id="cinfo" placeholder="填写存证备注内容"></textarea>
+            <input type="file" id="cfile">
+            <button class="btn" onclick="makeHash()">生成文件哈希</button>
+            <div class="hash-box" id="showhash">暂无哈希</div>
+            <input type="hidden" id="fhash">
+            <button class="btn" onclick="upCert()">提交上链存证</button>
+        </div>
+    </div>
+
+<script src="app.js"></script>
+<script>
+async function makeHash(){
+    let file = document.getElementById('cfile').files[0];
+    if(!file){alert("请选择文件");return;}
+    let r = new FileReader();
+    r.onload=async e=>{
+        let buf = e.target.result;
+        let hbuf = await crypto.subtle.digest("SHA-256",new Uint8Array(buf));
+        let arr = Array.from(new Uint8Array(hbuf));
+        let hash = arr.map(b=>b.toString(16).padStart(2,"0")).join("");
+        document.getElementById('showhash').innerText=hash;
+        document.getElementById('fhash').value=hash;
+    }
+    r.readAsArrayBuffer(file);
+}
+async function upCert(){
+    let data={
+        file_hash:document.getElementById('fhash').value,
+        metadata:document.getElementById('cinfo').value
+    }
+    let res = await httpPost("/api/chain/certify",data);
+    alert(res.msg);
+}
+</script>
+</body>
+</html>

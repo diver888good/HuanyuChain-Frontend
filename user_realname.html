@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>个人强实名备案</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#f6f8fa;}
+        .top-nav{height:60px;background:#165DFF;display:flex;align-items:center;padding:0 40px;}
+        .nav-title{color:#fff;font-size:18px;flex:1;}
+        .back{color:#fff;text-decoration:none;}
+        .main{max-width:700px;margin:30px auto;padding:20px;}
+        .card{background:#fff;padding:25px;border-radius:10px;}
+        h3{color:#165DFF;margin-bottom:15px;}
+        .warn{color:red;font-size:14px;margin:10px 0;}
+        input,textarea{width:100%;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:6px;}
+        .btn{background:#165DFF;color:#fff;border:none;padding:10px 20px;border-radius:6px;margin:8px 5px;cursor:pointer;}
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <div class="nav-title">个人终身强实名备案</div>
+        <a href="user_center.html" class="back">返回个人中心</a>
+    </div>
+    <div class="main">
+        <div class="card">
+            <h3>提交实名信息（提交后终身锁定不可修改）</h3>
+            <p class="warn">⚠️ 实名信息国密加密存储，司法机构可依法核验</p>
+            <input type="text" id="rname" placeholder="真实姓名">
+            <input type="text" id="rphone" placeholder="手机号码">
+            <input type="text" id="rcard" placeholder="身份证号码">
+            <input type="text" id="rbirth" placeholder="出生日期">
+            <textarea id="raddr" placeholder="常住详细地址"></textarea>
+            <button class="btn" onclick="faceCheck()">人脸核验</button>
+            <button class="btn" onclick="threeCheck()">三要素比对</button>
+            <button class="btn" onclick="submitReal()">提交实名锁定</button>
+        </div>
+    </div>
+
+<script src="app.js"></script>
+<script>
+let user = JSON.parse(localStorage.userInfo);
+let ok = false;
+
+async function faceCheck(){
+    let res = await httpPost('/api/auth/service/face-check',{user_id:user.user_id});
+    alert(res.msg);
+}
+async function threeCheck(){
+    let data={
+        user_id:user.user_id,
+        real_name:document.getElementById('rname').value,
+        id_card:document.getElementById('rcard').value,
+        phone:document.getElementById('rphone').value
+    }
+    let res = await httpPost('/api/auth/service/three-check',data);
+    if(res.code==200)ok=true;
+    alert(res.msg);
+}
+async function submitReal(){
+    if(!ok){alert("请先完成三要素核验");return;}
+    let data={
+        user_id:user.user_id,
+        real_name:document.getElementById('rname').value,
+        phone:document.getElementById('rphone').value,
+        id_card:document.getElementById('rcard').value,
+        birth_date:document.getElementById('rbirth').value,
+        address:document.getElementById('raddr').value
+    }
+    let res = await httpPost('/api/auth/service/full-real-auth',data);
+    alert(res.msg);
+    if(res.code==200)location.href="user_center.html";
+}
+</script>
+</body>
+</html>

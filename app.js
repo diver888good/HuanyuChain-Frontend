@@ -1,107 +1,74 @@
-const API_BASE = "https://huanyuchain.pythonanywhere.com";
+// ===================== 全局后端接口地址（部署时只改这一行） =====================
+const BASE_API = "https://huanyuchain.pythonanywhere.com";
 
-// GET请求
-async function httpGet(url) {
+// ===================== 获取本地登录用户信息 =====================
+function fillUserInfo() {
+    if (!localStorage.userInfo) return;
     try {
-        let res = await fetch(`${API_BASE}${url}`, {
-            headers: {
-                "Content-Type":"application/json",
-                "Authorization":localStorage.getItem("token")||""
-            }
-        })
-        return await res.json();
-    }catch(e){
-        return {code:500,msg:"服务请求失败"}
-    }
+        let user = JSON.parse(localStorage.userInfo);
+        let nameDom = document.getElementById("userName");
+        if (nameDom) {
+            nameDom.innerText = user.username || "普通用户";
+        }
+    } catch (e) {}
 }
 
-// POST请求
-async function httpPost(url,data={}) {
-    try {
-        let res = await fetch(`${API_BASE}${url}`,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json",
-                "Authorization":localStorage.getItem("token")||""
-            },
-            body:JSON.stringify(data)
-        })
-        return await res.json();
-    }catch(e){
-        return {code:500,msg:"服务请求失败"}
-    }
-}
-
-// 登录状态校验
-async function verifyLogin(){
-    let token = localStorage.getItem("token");
-    if(!token) return false;
-    let res = await httpGet("/api/auth/check");
-    return res.code === 200;
-}
-
-// 退出登录（清空所有身份信息）
-function userLogout(){
-    localStorage.removeItem("token");
+// ===================== 用户退出登录统一方法 =====================
+function userLogout() {
     localStorage.removeItem("userInfo");
-    localStorage.removeItem("userDID");
-    location.href="index.html";
+    localStorage.removeItem("token");
+    alert("已退出登录");
+    location.href = "login.html";
 }
 
-// 页面权限拦截 + 自动回填DID
-document.addEventListener("DOMContentLoaded",async ()=>{
-    let loginStatus = await verifyLogin();
-    let currPage = location.pathname.split("/").pop();
-    let needLoginPages = [
-        "dashboard.html","realname.html","cert.html","did.html",
-        "video.html","gov.html","meta.html","privacy.html",
-        "judicial.html","audit.html","cross.html","contract.html",
-        "iot.html","market.html","ai.html"
-    ];
-    if(needLoginPages.includes(currPage) && !loginStatus){
-        location.href="index.html";
+// ===================== 封装GET请求 =====================
+async function httpGet(url) {
+    let fullUrl = BASE_API + url;
+    let headers = {
+        "Content-Type": "application/json"
+    };
+    // 自动携带JWT令牌
+    if (localStorage.userInfo) {
+        let user = JSON.parse(localStorage.userInfo);
+        headers["Authorization"] = `Bearer ${user.token}`;
     }
-    if(currPage === "index.html" && loginStatus){
-        location.href="dashboard.html";
+    try {
+        let res = await fetch(fullUrl, {
+            method: "GET",
+            headers: headers
+        });
+        return await res.json();
+    } catch (err) {
+        alert("服务器连接失败，请检查后端服务是否启动");
+        return {code:500, msg:"请求异常"};
     }
-    // 自动填充所有页面的DID输入框
-    autoFillUserDID();
-})
-
-// 填充用户信息
-function fillUserInfo(){
-    let user = JSON.parse(localStorage.getItem("userInfo")||"{}");
-    let unameDom = document.getElementById("userName");
-    if(unameDom) unameDom.innerText = user.username||"管理员";
 }
 
-// ========== DID 核心功能（用户无需手动查找）==========
-// 保存DID到本地
-function saveUserDID(didStr){
-    localStorage.setItem("userDID", didStr);
+// ===================== 封装POST请求 =====================
+async function httpPost(url, data = {}) {
+    let fullUrl = BASE_API + url;
+    let headers = {
+        "Content-Type": "application/json"
+    };
+    // 自动携带JWT登录令牌
+    if (localStorage.userInfo) {
+        let user = JSON.parse(localStorage.userInfo);
+        headers["Authorization"] = `Bearer ${user.token}`;
+    }
+    try {
+        let res = await fetch(fullUrl, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify(data)
+        });
+        return await res.json();
+    } catch (err) {
+        alert("服务器连接失败，请检查后端服务是否启动");
+        return {code:500, msg:"请求异常"};
+    }
 }
 
-// 获取本地DID
-function getUserDID(){
-    return localStorage.getItem("userDID") || "";
-}
-
-// 自动填充页面所有DID输入框
-function autoFillUserDID(){
-    let did = getUserDID();
-    if(!did) return;
-    document.querySelectorAll('input[placeholder*="DID"], input[id*="did"]').forEach(item => {
-        item.value = did;
-    });
-}
-
-// 一键复制功能
-function copyText(text){
-    const input = document.createElement('input');
-    input.value = text;
-    document.body.appendChild(input);
-    input.select();
-    document.execCommand('copy');
-    document.body.removeChild(input);
-    alert('复制成功！');
+// ===================== 页面初始化自动填充用户信息 =====================
+window.onload = function(){
+    fillUserInfo();
 }

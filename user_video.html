@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>个人视频司法存证</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#f6f8fa;}
+        .top-nav{height:60px;background:#165DFF;display:flex;align-items:center;padding:0 40px;}
+        .nav-title{color:#fff;font-size:18px;flex:1;}
+        .back{color:#fff;text-decoration:none;}
+        .main{max-width:700px;margin:30px auto;padding:20px;}
+        .card{background:#fff;padding:25px;border-radius:10px;}
+        h3{color:#165DFF;margin-bottom:15px;}
+        input{width:100%;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:6px;}
+        .btn{background:#165DFF;color:#fff;border:none;padding:10px 20px;border-radius:6px;margin:8px 5px;cursor:pointer;}
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <div class="nav-title">视频双哈希司法存证</div>
+        <a href="user_center.html" class="back">返回个人中心</a>
+    </div>
+    <div class="main">
+        <div class="card">
+            <h3>上传视频自动生成双哈希</h3>
+            <input type="file" id="vfile" accept="video/*">
+            <button class="btn" onclick="createVHash()">生成双哈希</button>
+            <input type="text" id="fhash" placeholder="快速帧哈希">
+            <input type="text" id="fullhash" placeholder="司法完整文件哈希">
+            <button class="btn" onclick="subVideo()">提交视频存证</button>
+        </div>
+    </div>
+
+<script src="app.js"></script>
+<script>
+let user = JSON.parse(localStorage.userInfo);
+async function createVHash(){
+    let file = document.getElementById('vfile').files[0];
+    if(!file)return alert("请选择视频");
+    let r = new FileReader();
+    r.onload=async e=>{
+        let buf = e.target.result;
+        //快速哈希
+        let fbuf = buf.slice(0,1024*1024);
+        let fh = await crypto.subtle.digest("SHA-1",new Uint8Array(fbuf));
+        let fhash = Array.from(new Uint8Array(fh)).map(b=>b.toString(16).padStart(2,"0")).join("");
+        //完整哈希
+        let fullh = await crypto.subtle.digest("SHA-256",new Uint8Array(buf));
+        let fullhash = Array.from(new Uint8Array(fullh)).map(b=>b.toString(16).padStart(2,"0")).join("");
+        document.getElementById('fhash').value=fhash;
+        document.getElementById('fullhash').value=fullhash;
+    }
+    r.readAsArrayBuffer(file);
+}
+async function subVideo(){
+    let data={
+        did:user.main_did,
+        video_hash:document.getElementById('fhash').value,
+        full_file_hash:document.getElementById('fullhash').value
+    }
+    let res = await httpPost("/api/video/cert",data);
+    alert(res.msg);
+}
+</script>
+</body>
+</html>

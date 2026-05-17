@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>用户帮助中心</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#f6f8fa;font-family:Microsoft YaHei;}
+        .top-nav{height:60px;background:#165DFF;display:flex;align-items:center;padding:0 40px;}
+        .nav-title{color:#fff;font-size:18px;flex:1;}
+        .back-btn{color:#fff;text-decoration:none;background:rgba(255,255,255,0.2);padding:6px 12px;border-radius:4px;}
+        .main{max-width:900px;margin:30px auto;padding:20px;}
+        .card{background:#fff;padding:25px;border-radius:10px;}
+        h2{color:#165DFF;margin-bottom:20px;}
+        h3{color:#333;margin:15px 0 10px;}
+        .text-box{line-height:1.8;font-size:15px;margin:15px 0;}
+        .step-item{background:#f5f7fa;padding:12px;border-radius:6px;margin:10px 0;}
+        .green-tip{color:#00994c;font-weight:500;}
+        .red-tip{color:#e53935;font-weight:500;}
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <div class="nav-title">用户帮助中心</div>
+        <a href="user_center.html" class="back-btn">返回个人中心</a>
+    </div>
+
+    <div class="main">
+        <div class="card">
+            <h2>存证查询与真伪核验 使用教程</h2>
+            
+            <div class="text-box">
+                <h3>一、用户在哪里查看自己所有链上存证数据</h3>
+                <div class="step-item">
+                    1. 普通文件、文字证据 → 进入 <strong>个人文件存证</strong> 页面提交与查看
+                </div>
+                <div class="step-item">
+                    2. 视频证据 → 进入 <strong>个人视频司法存证</strong> 页面，查看双哈希存证信息
+                </div>
+                <div class="step-item">
+                    3. 查看全部存证 → 进入 <strong>个人中心</strong>，查看我的全部存证记录
+                </div>
+                <div class="step-item">
+                    4. 司法效力核验 → 可在 <strong>公开核验平台</strong> 免登录查验真伪
+                </div>
+            </div>
+
+            <div class="text-box">
+                <h3>二、如何确认存证真实有效、没有被篡改</h3>
+                <div class="step-item green-tip">
+                    方法一：自主文件核验（最准确）
+                    <p>1. 保留好自己本地原始文件/原始文字</p>
+                    <p>2. 在存证页面重新生成哈希值</p>
+                    <p>3. 和链上已保存哈希对比，完全一致即为真实未篡改</p>
+                </div>
+                <div class="step-item green-tip">
+                    方法二：系统一键核验
+                    <p>将存证哈希填入核验输入框，点击核验，系统自动判定真伪</p>
+                </div>
+            </div>
+
+            <div class="text-box">
+                <h3>三、链上存证三大不可篡改依据</h3>
+                <div class="step-item">
+                    1. 时间戳全网锁定，提交时间永久固定无法修改
+                </div>
+                <div class="step-item">
+                    2. 哈希算法不可逆，修改内容哈希立刻全部改变
+                </div>
+                <div class="step-item">
+                    3. 联盟链多节点共同记账，单人无法篡改整条链数据
+                </div>
+            </div>
+
+            <div class="text-box">
+                <h3>四、隐私计算功能使用说明</h3>
+                <div class="step-item">
+                    <strong>PSI隐私集合求交</strong>：双方数据互不泄露，只找出双方共同数据，用于信息比对、人员核对
+                </div>
+                <div class="step-item">
+                    <strong>联邦学习均值计算</strong>：多方数据留在本地不出库，联合算出统一平均值，保护数据隐私
+                </div>
+            </div>
+
+            <div class="text-box">
+                <h3>五、跨链存证使用说明</h3>
+                <div class="step-item">
+                    上传文件生成哈希，提交跨链存证，可将证据同步至多条联盟链，实现多链互通互认，证据通用有效
+                </div>
+            </div>
+
+            <div class="text-box red-tip">
+                ⚠️ 重要提醒
+                <p>1. 实名信息提交后终身锁定，不可随意修改</p>
+                <p>2. 所有存证仅加密保存哈希，不上传原始文件，保护个人隐私</p>
+                <p>3. 所有操作全程日志留痕，可用于司法举证与责任追溯</p>
+            </div>
+        </div>
+    </div>
+
+<script src="app.js"></script>
+</body>
+</html>
