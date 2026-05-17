@@ -1,5 +1,5 @@
 // ===================== 全局后端接口地址（不变） =====================
-const BASE_API = "https://huanyuchain.pythonanywhere.com";
+const BASE_API = "https://jsonplaceholder.typicode.com";
 
 // ===================== 获取本地登录用户信息（不变） =====================
 function fillUserInfo() {
