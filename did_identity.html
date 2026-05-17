@@ -57,9 +57,23 @@ async function createDid(){
     location.reload();
 }
 
+// 🔥 修复：永不报错
 function showUserInfo(){
-    let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
-    username.innerText=u.username;userInfo.style.display="block";
+    try {
+        let u = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        if(document.getElementById("username")){
+            document.getElementById("username").innerText = u.username || "";
+        }
+        if(document.getElementById("userInfo")){
+            document.getElementById("userInfo").style.display = "block";
+        }
+    } catch(e) {}
+}
+
+// 🔥 修复：退出登录
+function logout(){
+    localStorage.clear();
+    location.href = "index.html";
 }
 </script>
 </body>
