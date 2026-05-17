@@ -1,21 +1,166 @@
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:Microsoft Yahei;background:#f4f7fa;color:#333;line-height:1.6;}
-.container{max-width:1200px;margin:20px auto;padding:0 15px;}
-header{background:#234068;color:#fff;padding:15px 0;}
-.header-container{max-width:1200px;margin:0 auto;padding:0 15px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:15px;}
-.logo{font-size:22px;font-weight:bold;}
-nav a{color:#fff;text-decoration:none;margin:0 10px;padding:5px 8px;border-radius:4px;}
-nav a.active{background:#4072b8;}
-#userInfo{display:flex;align-items:center;gap:12px;}
-.card{background:#fff;border-radius:8px;box-shadow:0 2px 10px #ddd;margin:20px 0;overflow:hidden;}
-.card-header{background:#e8f0fb;padding:12px 15px;border-bottom:1px solid #eee;}
-.card-body{padding:15px;}
-input,textarea{width:100%;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:4px;outline:none;}
-button{padding:9px 16px;background:#2b6cb0;color:#fff;border:none;border-radius:4px;cursor:pointer;margin:5px 3px;}
-.btn-secondary{background:#6c757d;}
-.menu-toggle{display:none;background:none;border:none;color:#fff;font-size:20px;}
-@media(max-width:768px){
-    nav{display:none;}
-    .menu-toggle{display:block;}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
-.result-box{margin-top:10px;padding:10px;background:#f8f9fa;border-radius:4px;}
+
+body {
+    font-family: "Microsoft Yahei", sans-serif;
+    background: #f4f7fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+/* 头部导航 */
+header {
+    background: #234068;
+    color: #fff;
+    padding: 15px 0;
+}
+
+.header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.logo {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    margin: 0 10px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+nav a.active {
+    background: #4072b8;
+}
+
+nav a:hover {
+    background: #335a92;
+}
+
+#userInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* 卡片样式 */
+.card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin: 20px 0;
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: #e8f0fb;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.card-body {
+    padding: 15px;
+}
+
+/* 表单 */
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    outline: none;
+    font-size: 14px;
+}
+
+input:focus, textarea:focus {
+    border-color: #2b6cb0;
+    box-shadow: 0 0 0 2px rgba(43,108,176,0.15);
+}
+
+/* 按钮 */
+button {
+    padding: 9px 16px;
+    background: #2b6cb0;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 5px 3px;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #235a96;
+}
+
+.btn-secondary {
+    background: #6c757d;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+/* 移动端适配 */
+.menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+}
+
+@media (max-width: 768px) {
+    nav {
+        display: none;
+    }
+    .menu-toggle {
+        display: block;
+    }
+    .header-container {
+        gap: 10px;
+    }
+}
+
+/* 结果展示 */
+.result-box {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    word-break: break-all;
+}
+
+/* 哈希/验签专用样式 */
+#localHash, #hashVal {
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
