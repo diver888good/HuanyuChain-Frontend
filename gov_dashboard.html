@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>政务中台 - 寰域链 V8.0</title>
+    <title>政务中台</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,44 +12,38 @@
             <h1 class="logo">寰域链 V8.0</h1>
             <button class="menu-toggle">☰</button>
             <nav>
-                <a href="index.html">首页存证</a>
-                <a href="personal_center.html">个人中心</a>
-                <a href="dashboard.html">管理面板</a>
-                <a href="did_identity.html">DID身份</a>
-                <a href="video_cert.html">视频存证</a>
-                <a href="federated_privacy.html">隐私计算</a>
-                <a href="metaverse_asset.html">元宇宙NFT</a>
+                <a href="index.html">首页</a>
                 <a href="gov_dashboard.html" class="active">政务中台</a>
             </nav>
-            <div id="userInfo" style="display: none;">
+            <div id="userInfo" style="display:none">
                 <span id="username"></span>
-                <button id="logoutBtn" class="btn-secondary" onclick="logout()">退出</button>
+                <button onclick="logout()">退出</button>
             </div>
         </div>
     </header>
     <main class="container">
         <div class="card">
-            <div class="card-header"><h3>全域智慧政务中台</h3></div>
-            <div class="card-body" id="govBox">加载中...</div>
+            <div class="card-header"><h3>政务可信存证中台</h3></div>
+            <div class="card-body" id="govDataBox">加载中...</div>
         </div>
     </main>
-    <script src="app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded',async ()=>{
-            let flag = await verifyToken();
-            if(!flag){location.href="index.html";return;}
-            showUserInfo();
-            loadGovData();
-        });
-        async function loadGovData(){
-            let res = await httpGet("/api/gov/data");
-            govBox.innerText = res.msg||"政务数据加载完成";
-        }
-        function showUserInfo(){
-            let u = JSON.parse(localStorage.getItem("userInfo")||"{}");
-            username.innerText = u.username||"";
-            userInfo.style.display = "block";
-        }
-    </script>
+<script src="app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded',async function(){
+    if(!await verifyToken()){location.href="index.html";return;}
+    showUserInfo();
+    loadGovData();
+})
+
+async function loadGovData(){
+    let res = await httpGet("/api/gov/data");
+    govDataBox.innerText = res.msg||"政务数据加载完成";
+}
+
+function showUserInfo(){
+    let u=JSON.parse(localStorage.getItem("userInfo")||"{}");
+    username.innerText=u.username;userInfo.style.display="block";
+}
+</script>
 </body>
 </html>
