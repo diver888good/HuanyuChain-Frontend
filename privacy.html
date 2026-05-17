@@ -58,29 +58,38 @@
 <script>
 fillUserInfo();
 
-// PSI隐私集合求交（原有代码100%保留）
+// 🔥 修复：增加 try/catch 防止报错，逻辑完全不变
 async function runPsiCalc(){
-    let data = {list_a:[1,2,3,4,5],list_b:[3,4,5,6,7]};
-    let res = await httpPost('/api/privacy/psi',data);
-    document.getElementById('psiResult').innerText = "✅ 交集结果："+JSON.stringify(res.data);
+    try {
+        let data = {list_a:[1,2,3,4,5],list_b:[3,4,5,6,7]};
+        let res = await httpPost('/api/privacy/psi',data);
+        document.getElementById('psiResult').innerText = "✅ 交集结果："+JSON.stringify(res.data);
+    } catch (error) {
+        alert("⚠️ 隐私求交服务连接失败");
+        console.error(error);
+    }
 }
 
-// 联邦学习均值计算（原有代码100%保留 + 输入验证）
+// 🔥 修复：增加 try/catch 防止报错，逻辑完全不变
 async function runAvgCalc(){
-    let str = document.getElementById('numArr').value.trim();
-    if(!str){
-        alert("请输入数字！");
-        return;
+    try {
+        let str = document.getElementById('numArr').value.trim();
+        if(!str){
+            alert("请输入数字！");
+            return;
+        }
+        let arr = str.split(',').map(Number);
+        arr = arr.filter(item => !isNaN(item));
+        if(arr.length === 0){
+            alert("输入格式错误，请输入逗号分隔的数字！");
+            return;
+        }
+        let res = await httpPost('/api/privacy/federated-avg',{values:arr});
+        document.getElementById('avgResult').innerText = "✅ 联邦均值："+res.data.avg;
+    } catch (error) {
+        alert("⚠️ 联邦计算服务连接失败");
+        console.error(error);
     }
-    let arr = str.split(',').map(Number);
-    // 过滤无效数字
-    arr = arr.filter(item => !isNaN(item));
-    if(arr.length === 0){
-        alert("输入格式错误，请输入逗号分隔的数字！");
-        return;
-    }
-    let res = await httpPost('/api/privacy/federated-avg',{values:arr});
-    document.getElementById('avgResult').innerText = "✅ 联邦均值："+res.data.avg;
 }
 </script>
 </body>
