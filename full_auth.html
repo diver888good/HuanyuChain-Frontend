@@ -24,8 +24,30 @@
 <script src="app.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded',async ()=>{
-    if(!await verifyToken())location.href="index.html";
-})
+    if(!await verifyToken()){
+        location.href="index.html";
+        return;
+    }
+    // 自动加载用户信息（不报错）
+    showUserInfo();
+});
+
+// 安全版用户信息显示
+function showUserInfo(){
+    try {
+        let user = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        let nameElem = document.getElementById("username");
+        let boxElem = document.getElementById("userInfo");
+        if(nameElem) nameElem.innerText = user.username || "";
+        if(boxElem) boxElem.style.display = "block";
+    } catch(e){}
+}
+
+// 退出登录（兼容所有页面）
+function logout(){
+    localStorage.clear();
+    location.href = "index.html";
+}
 </script>
 </body>
 </html>
