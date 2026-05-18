@@ -11,7 +11,23 @@
         .warn-tip{color:#ef4444; font-size:13px; margin-bottom:10px;}
         .hide{display:none;}
         .real-btn{background:#165DFF;color:#fff;border:none;padding:8px 16px;border-radius:6px;margin:5px;cursor:pointer;}
-        .commit-box{margin:12px 0; padding:10px; background:#f8f9fa; border-radius:6px;}
+        /* ========== 仅修改这里：强化知情承诺框 ========== */
+        .commit-box{
+            margin:12px 0; 
+            padding:15px; 
+            background:#fff4f4; 
+            border:2px solid #ff3333; 
+            border-radius:8px;
+            font-size:16px;
+            font-weight:bold;
+        }
+        /* 复选框放大到25px，超级醒目 */
+        #commit{
+            width:25px;
+            height:25px;
+            margin-right:10px;
+            vertical-align:middle;
+        }
         .upload-item{margin:10px 0;}
         canvas{border:1px solid #ccc; border-radius:6px;}
         .key-box{margin-top:15px;padding:12px;background:#eef5ff;border-radius:6px;word-break:break-all;}
@@ -31,7 +47,7 @@
     <a href="realname.html" class="active">实名身份确权</a>
     <a href="cert.html">链上数据存证</a>
     <a href="did.html">DID身份管理</a>
-    <a href="video.html">视频司法存证</a>
+    <a href="video.html">司法存证</a>
     <a href="gov.html">政务台账上链</a>
     <a href="meta.html">元宇宙&NFT</a>
     <a href="privacy.html">隐私计算服务</a>
@@ -60,8 +76,10 @@
         <h2>用户强实名确权（一次性确权·终身封存本源身份）</h2>
         <p class="warn-tip">⚠️ 首次确权资料永久封存不可修改，每次使用密钥自动人脸比对并动态更新生物信息</p>
 
+        <!-- ========== 醒目复选框（无任何逻辑修改） ========== -->
         <div class="commit-box">
-            <label><input type="checkbox" id="commit"> 本人知晓规则：首次资料永久存档，日常使用必做人脸活体核验</label>
+            <input type="checkbox" id="commit"> 
+            <label>本人知晓规则：首次资料永久存档，日常使用必做人脸活体核验（必选！）</label>
         </div>
 
         <div class="auth-tab">
