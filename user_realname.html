@@ -6,7 +6,7 @@
     <title>寰域链 - 强身份实名备案</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* 前台专属简洁样式 */
+        /* 前台专属简洁样式 + 后台统一样式 */
         .front-header{
             background:#1f2937;
             color:#fff;
@@ -35,11 +35,30 @@
             cursor:pointer;
             margin-bottom:15px;
         }
+        /* 与后台完全统一的知情承诺样式 */
+        .commit-box{
+            margin:12px 0; 
+            padding:15px; 
+            background:#fff4f4; 
+            border:2px solid #ff3333; 
+            border-radius:8px;
+            font-size:16px;
+            font-weight:bold;
+        }
+        #commit{
+            width:25px;
+            height:25px;
+            margin-right:10px;
+            vertical-align:middle;
+        }
+        .upload-item{margin:10px 0;}
+        canvas{border:1px solid #ccc; border-radius:6px;}
+        .btn:disabled{background:#ccc; cursor:not-allowed; opacity:0.7;}
     </style>
 </head>
 <body>
 
-<!-- 前台简洁头部（替换管理员后台头部） -->
+<!-- 前台专属头部 -->
 <div class="front-header">
     寰域链 V8.0 - 强身份实名备案
 </div>
@@ -49,21 +68,45 @@
     <button class="back-btn" onclick="location.href='index.html'">← 返回用户中心</button>
 
     <div class="card">
-        <h2>强身份实名信息提交（终身锁定·司法可溯源）</h2>
-        <p class="warn-tip">⚠️ 资料提交后国密加密存储、终身不可修改，司法机构可依法调取核验身份</p>
+        <h2>用户强实名确权（一次性确权·终身封存本源身份）</h2>
+        <p class="warn-tip">⚠️ 首次确权资料永久封存不可修改，每次使用密钥自动人脸比对并动态更新生物信息</p>
 
-        <div class="auth-tab">
-            <span class="active" onclick="switchAuth(1)">个人实名</span>
-            <span onclick="switchAuth(2)">企业实名</span>
+        <!-- 与后台完全一致：醒目知情承诺复选框 -->
+        <div class="commit-box">
+            <input type="checkbox" id="commit"> 
+            <label>本人知晓规则：首次资料永久存档，日常使用必做人脸活体核验（必选！）</label>
         </div>
 
-        <!-- 个人实名（和后台完全一致） -->
+        <div class="auth-tab">
+            <span class="active" onclick="switchAuth(1)">个人实名确权</span>
+            <span onclick="switchAuth(2)">企业实名确权</span>
+        </div>
+
+        <!-- 个人实名（与后台完全一致 + 身份证上传+人脸采集） -->
         <div id="personAuth">
             <input type="text" id="realName" placeholder="真实姓名">
             <input type="text" id="phone" placeholder="手机号码">
             <input type="text" id="idCard" placeholder="身份证号码">
             <input type="text" id="birth" placeholder="出生日期">
             <input type="text" id="address" placeholder="常住地址">
+
+            <!-- 身份证上传（和后台一致） -->
+            <div class="upload-item">
+                <label>上传身份证正面照片：</label>
+                <input type="file" id="idFrontFile" accept="image/*">
+            </div>
+            <div class="upload-item">
+                <label>上传身份证反面照片：</label>
+                <input type="file" id="idBackFile" accept="image/*">
+            </div>
+
+            <!-- 人脸抓拍（和后台一致） -->
+            <div class="upload-item">
+                <p>采集初代基准人脸（永久身份基准）</p>
+                <video id="faceVideo" width="300" height="220"></video>
+                <canvas id="faceCanvas" width="300" height="220" class="hide"></canvas>
+                <button class="real-btn" onclick="captureFace()">抓拍基准人脸</button>
+            </div>
         </div>
 
         <!-- 企业实名（和后台完全一致） -->
@@ -75,13 +118,16 @@
             <input type="text" id="company_address" placeholder="企业注册地址">
         </div>
 
-        <!-- 核验按钮（和后台功能完全一致） -->
-        <button class="real-btn" onclick="realFaceCheck()">活体人脸核验</button>
-        <button class="real-btn" onclick="realThreeCheck()">三要素真实比对</button>
-        <button class="real-btn" onclick="randomCheck()">随机身份核验</button>
-        
-        <!-- 实名提交按钮（终身锁定，和后台一致） -->
-        <button class="btn" id="submitBtn" onclick="submitRealName()">提交实名备案（终身加密锁定）</button>
+        <!-- 按钮与后台完全统一 -->
+        <br>
+        <button class="real-btn" id="checkBtn" onclick="startAllCheck()">一键三方比对核验</button>
+        <button class="btn" id="submitBtn" onclick="finalConfirmEncrypt()" disabled>提交确权 本源身份加密封存</button>
+
+        <div class="key-box hide" id="userSecretKeyBox" style="margin-top:15px;padding:12px;background:#eef5ff;border-radius:6px;word-break:break-all;">
+            <h4>✅ 确权成功 终身身份加密密钥</h4>
+            <p id="userSecretKey"></p>
+            <p style="font-size:13px;color:#165DFF">每次使用请输入此密钥，强制人脸比对后方可使用权限</p>
+        </div>
     </div>
 </div>
 
@@ -93,41 +139,28 @@ if(!localStorage.userInfo){
     location.href="login.html";
 }
 
-// 初始化用户信息
 fillUserInfo();
 let authType = 1;
-let verify_ok = false; 
+let allCheckPass = false;
+let faceBase64 = "";
+let idFrontBase64 = "";
+let idBackBase64 = "";
+let videoStream = null;
 
-// ============= 核心实名逻辑（1:1 复刻管理员后台） =============
-// 提交实名备案（终身锁定）
-async function submitRealName(){
-    if(!verify_ok){
-        alert("ERROR：三要素+人脸未通过真实核验，禁止实名！");
-        return;
+// 实时监听复选框，和后台逻辑一致
+document.getElementById('commit').addEventListener('change', function() {
+    const isChecked = this.checked;
+    document.getElementById('checkBtn').disabled = !isChecked;
+    if (!isChecked) {
+        document.getElementById('submitBtn').disabled = true;
+        allCheckPass = false;
     }
+});
 
-    const userInfo = JSON.parse(localStorage.userInfo);
-    let data = {
-        user_id: userInfo.user_id,
-        real_name: document.getElementById('realName').value,
-        phone: document.getElementById('phone').value,
-        id_card: document.getElementById('idCard').value,
-        birth_date: document.getElementById('birth').value,
-        address: document.getElementById('address').value
-    }
-
-    // 🔥 修正为正确接口（和后台一致）
-    let res = await httpPost('/api/auth/full-real-auth',data);
-    if(res.code === 200){
-        document.getElementById("submitBtn").disabled = true;
-        document.getElementById("submitBtn").innerText = "✅ 已实名锁定·本人真实身份·区块链不可篡改";
-        alert("✅ 强实名成功！身份国密加密、链上绑定DID、具备完整司法效力");
-    } else {
-        alert(res.msg);
-    }
+function getUserId() {
+    try { return JSON.parse(localStorage.userInfo).user_id || 1; } catch (e) { return 1; }
 }
 
-// 切换实名类型
 function switchAuth(type){
     authType = type;
     document.querySelectorAll('.auth-tab span').forEach((item,i)=>{
@@ -137,37 +170,122 @@ function switchAuth(type){
     document.getElementById('companyAuth').classList.toggle('hide', type!==2);
 }
 
-// 活体人脸核验
-async function realFaceCheck(){
-    const userInfo = JSON.parse(localStorage.userInfo);
-    let res = await httpPost('/api/auth/face-check', {user_id: userInfo.user_id});
-    if(res.code === 200){
-        alert("✅ 人脸核验通过：确认本人操作");
-    }
+window.onload = function(){
+    initCamera();
+    // 身份证文件上传转base64
+    document.getElementById('idFrontFile').addEventListener('change',e=>{
+        let file = e.target.files[0];
+        if(file) getImgBase64(file,str=>idFrontBase64=str);
+    })
+    document.getElementById('idBackFile').addEventListener('change',e=>{
+        let file = e.target.files[0];
+        if(file) getImgBase64(file,str=>idBackBase64=str);
+    })
+    // 初始化按钮禁用
+    document.getElementById('checkBtn').disabled = true;
+    document.getElementById('submitBtn').disabled = true;
 }
 
-// 三要素真实比对
-async function realThreeCheck(){
-    const userInfo = JSON.parse(localStorage.userInfo);
+// 初始化摄像头
+function initCamera(){
+    let video = document.getElementById('faceVideo');
+    navigator.mediaDevices.getUserMedia({video:true})
+    .then(stream=>{
+        videoStream = stream;
+        video.srcObject = stream;
+    })
+}
+
+// 抓拍基准人脸
+function captureFace(){
+    let video = document.getElementById('faceVideo');
+    let canvas = document.getElementById('faceCanvas');
+    let ctx = canvas.getContext('2d');
+    ctx.drawImage(video,0,0,300,220);
+    faceBase64 = canvas.toDataURL("image/jpeg");
+    alert("✅ 初代基准人脸采集完成，作为永久身份比对依据");
+}
+
+// 图片转base64
+function getImgBase64(file,cb){
+    let reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = ()=>cb(reader.result);
+}
+
+// 一键三方比对（和后台接口一致）
+async function startAllCheck(){
+    if(!document.getElementById('commit').checked){
+        alert("请先阅读并勾选知情承诺");
+        return;
+    }
+    if(!idFrontBase64 || !idBackBase64 || !faceBase64){
+        alert("请上传身份证正反照+采集基准人脸");
+        return;
+    }
+    let name = document.getElementById('realName').value;
+    let card = document.getElementById('idCard').value;
+    let phone = document.getElementById('phone').value;
+    if(!name||!card||!phone){
+        alert("请填写完整身份信息");
+        return;
+    }
     let data = {
-        user_id: userInfo.user_id,
-        real_name: document.getElementById('realName').value,
-        id_card: document.getElementById('idCard').value,
-        phone: document.getElementById('phone').value
+        user_id:getUserId(),
+        real_name:name,id_card:card,phone:phone,
+        id_front:idFrontBase64,id_back:idBackBase64,base_face:faceBase64
     }
-    let res = await httpPost('/api/auth/three-check', data);
-    if(res.code === 200){
-        verify_ok = true;
-        alert("✅ 三要素比对成功：身份真实有效");
-    } else {
-        alert("❌ 身份信息不匹配，核验失败");
+    try{
+        let res = await httpPost("/api/auth/service/all-three-check",data);
+        if(res.code===200){
+            allCheckPass = true;
+            document.getElementById('submitBtn').disabled = false;
+            alert("✅ 文本+证件+基准人脸三方比对通过，可封存本源身份");
+        }else{
+            alert("❌ 核验失败："+res.msg);
+        }
+    }catch(e){
+        alert("核验服务异常");
     }
 }
 
-// 随机身份核验（防冒用）
-function randomCheck(){
-    let list = ["真实姓名","身份证号码","手机号码","常住地址"];
-    alert("🔍 随机身份核验项："+ list[Math.floor(Math.random()*list.length)]);
+// 提交确权（和后台接口完全一致）
+async function finalConfirmEncrypt(){
+    if(!allCheckPass){
+        alert("请先完成三方信息比对核验");
+        return;
+    }
+    let data = {
+        user_id:getUserId(),
+        real_name:document.getElementById('realName').value,
+        id_card:document.getElementById('idCard').value,
+        phone:document.getElementById('phone').value,
+        birth:document.getElementById('birth').value,
+        address:document.getElementById('address').value
+    }
+    try{
+        let res = await httpPost("/api/auth/service/final-encrypt-save",data);
+        if(res.code===200){
+            // 清空表单
+            document.getElementById('realName').value = "";
+            document.getElementById('idCard').value = "";
+            document.getElementById('phone').value = "";
+            document.getElementById('birth').value = "";
+            document.getElementById('address').value = "";
+            document.getElementById('idFrontFile').value = "";
+            document.getElementById('idBackFile').value = "";
+            idFrontBase64 = "";idBackBase64 = "";faceBase64 = "";
+            if(videoStream) videoStream.getTracks().forEach(t=>t.stop());
+
+            document.getElementById('userSecretKeyBox').classList.remove('hide');
+            document.getElementById('userSecretKey').innerText = res.data.secret_key;
+            document.getElementById("submitBtn").disabled = true;
+            document.getElementById("submitBtn").innerText = "✅ 本源身份已永久加密封存";
+            alert("✅ 首次确权完成！本源资料永久存档，日常使用强制人脸动态比对");
+        }
+    }catch(e){
+        alert("加密封存失败");
+    }
 }
 </script>
 </body>
