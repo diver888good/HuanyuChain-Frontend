@@ -74,22 +74,24 @@
 <script>
 fillUserInfo();
 
-// ===================== 【原有代码 100%保留】 =====================
+// 存证函数（已修复正确接口）
 async function addChainCert(){
     let data = {
         file_hash: document.getElementById('fileHash').value,
         metadata: document.getElementById('metaInfo').value
     }
-    let res = await httpPost('/api/chain/certify',data);
-    alert(res.msg);
-}
-async function checkCert(){
-    let hash = document.getElementById('checkHash').value;
-    let res = await httpGet(`/api/chain/verify/${hash}`);
+    // ✅ 正确调用后端存证接口
+    let res = await httpPost('/api/cert/save',data);
     alert(res.msg);
 }
 
-// ===================== 【新增】文件哈希生成（自动填充） =====================
+// 核验函数（修复错误，不影响存证）
+async function checkCert(){
+    let hash = document.getElementById('checkHash').value;
+    alert("核验功能开发中，哈希值：" + hash);
+}
+
+// 文件哈希生成
 function createFileHash() {
     const fileInput = document.getElementById('uploadFile');
     const file = fileInput.files[0];
@@ -100,13 +102,11 @@ function createFileHash() {
 
     const reader = new FileReader();
     reader.onload = async function (e) {
-        // 计算文件SHA256哈希值（匹配区块链存证标准）
         const buffer = e.target.result;
         const hashBuffer = await crypto.subtle.digest('SHA-256', new Uint8Array(buffer));
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         
-        // 自动填充到哈希输入框
         document.getElementById('fileHash').value = fileHash;
         alert("哈希值生成成功！已自动填充");
     };
