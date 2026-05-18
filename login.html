@@ -11,7 +11,45 @@
         input{width:100%;padding:12px;margin:10px 0;border:1px solid #ddd;border-radius:6px;}
         .login-btn{width:100%;background:#165DFF;color:#fff;border:none;padding:12px;border-radius:6px;margin-top:15px;cursor:pointer;}
         .tip{text-align:center;margin-top:20px;}
-        a{color:#165DFF;text-decoration:none;}
+        a{color:#165DFF;text-decoration:none;margin:0 5px;}
+
+        /* 找回密码弹窗样式 */
+        .mask{
+            position:fixed;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background:rgba(0,0,0,0.3);
+            display:none;
+            z-index:999;
+        }
+        .find-pwd-box{
+            width:350px;
+            background:#fff;
+            padding:30px;
+            border-radius:10px;
+            position:absolute;
+            top:50%;
+            left:50%;
+            transform:translate(-50%,-50%);
+        }
+        .close-btn{
+            text-align:right;
+            cursor:pointer;
+            color:#999;
+            font-size:18px;
+        }
+        .sub-btn{
+            width:100%;
+            background:#165DFF;
+            color:#fff;
+            border:none;
+            padding:10px;
+            border-radius:6px;
+            margin-top:10px;
+            cursor:pointer;
+        }
     </style>
 </head>
 <body>
@@ -20,11 +58,30 @@
         <input type="text" id="username" placeholder="请输入账号">
         <input type="password" id="password" placeholder="请输入密码">
         <button class="login-btn" onclick="userLogin()">立即登录</button>
-        <div class="tip">暂无账号？<a href="register.html">立即注册</a></div>
+        <div class="tip">
+            暂无账号？<a href="register.html">立即注册</a>
+            |
+            <a href="javascript:openFindPwd()">忘记密码？</a>
+        </div>
+    </div>
+
+    <!-- 找回密码弹窗 -->
+    <div class="mask" id="pwdMask">
+        <div class="find-pwd-box">
+            <div class="close-btn" onclick="closeFindPwd()">×</div>
+            <h3 style="text-align:center;margin-bottom:20px;color:#333">找回登录密码</h3>
+            <input type="text" id="findUser" placeholder="请输入注册账号/手机号">
+            <input type="text" id="findPhone" placeholder="绑定手机号（接收重置验证码）">
+            <button class="sub-btn" onclick="sendResetCode()">发送重置验证码</button>
+            <input type="text" id="resetCode" placeholder="输入验证码">
+            <input type="password" id="newPwd" placeholder="设置新登录密码">
+            <button class="sub-btn" onclick="resetPassword()">确认重置密码</button>
+        </div>
     </div>
 
 <script src="app.js"></script>
 <script>
+// 原有登录逻辑不变
 async function userLogin(){
     let username = document.getElementById('username').value;
     let password = document.getElementById('password').value;
@@ -37,6 +94,63 @@ async function userLogin(){
         localStorage.userInfo = JSON.stringify(res.data);
         alert("登录成功");
         location.href="user_center.html";
+    }else{
+        alert(res.msg);
+    }
+}
+
+// 打开找回密码弹窗
+function openFindPwd(){
+    document.getElementById('pwdMask').style.display = 'block';
+}
+// 关闭找回密码弹窗
+function closeFindPwd(){
+    document.getElementById('pwdMask').style.display = 'none';
+    // 清空输入框
+    document.getElementById('findUser').value = '';
+    document.getElementById('findPhone').value = '';
+    document.getElementById('resetCode').value = '';
+    document.getElementById('newPwd').value = '';
+}
+
+// 发送重置验证码
+async function sendResetCode(){
+    let user = document.getElementById('findUser').value.trim();
+    let phone = document.getElementById('findPhone').value.trim();
+    if(!user || !phone){
+        alert("请填写账号与绑定手机号");
+        return;
+    }
+    // 对接后端密码找回接口
+    let res = await httpPost('/api/auth/send-reset-code',{username:user,phone:phone});
+    if(res.code === 200){
+        alert("验证码已发送至手机，请查收");
+    }else{
+        alert(res.msg);
+    }
+}
+
+// 确认重置密码
+async function resetPassword(){
+    let user = document.getElementById('findUser').value.trim();
+    let code = document.getElementById('resetCode').value.trim();
+    let newPwd = document.getElementById('newPwd').value.trim();
+    if(!user || !code || !newPwd){
+        alert("请填写完整验证码与新密码");
+        return;
+    }
+    if(newPwd.length < 6){
+        alert("密码长度不能少于6位");
+        return;
+    }
+    let res = await httpPost('/api/auth/reset-password',{
+        username:user,
+        code:code,
+        new_pwd:newPwd
+    });
+    if(res.code === 200){
+        alert("密码重置成功，请使用新密码登录");
+        closeFindPwd();
     }else{
         alert(res.msg);
     }
