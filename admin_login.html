@@ -9,9 +9,10 @@
     <div class="card" style="width:420px;">
         <h2 style="text-align:center;">寰域链可信存证联盟链</h2>
         <input type="text" id="username" placeholder="请输入账号" value="admin">
-        <input type="password" id="pwd" placeholder="请输入密码" value="123456">
+        <input type="password" id="pwd" placeholder="请输入密码" value="admin123456">
         <button class="btn" style="width:100%;font-size:16px;" onclick="loginFunc()">立即登录</button>
     </div>
+
 <script src="app.js"></script>
 <script>
 async function loginFunc(){
@@ -21,7 +22,8 @@ async function loginFunc(){
     if(res.code===200){
         localStorage.setItem("token",res.data.token);
         localStorage.setItem("userInfo",JSON.stringify(res.data));
-        location.href="dashboard.html";
+        // ✅ 修正：跳转到修改后的后台首页
+        location.href="admin_dashboard.html";
     }else{
         alert(res.msg);
     }
