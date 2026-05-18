@@ -13,7 +13,6 @@
         .tip{text-align:center;margin-top:20px;}
         a{color:#165DFF;text-decoration:none;margin:0 5px;}
 
-        /* 找回密码弹窗样式 */
         .mask{
             position:fixed;
             top:0;
@@ -65,15 +64,13 @@
         </div>
     </div>
 
-    <!-- 找回密码弹窗 -->
     <div class="mask" id="pwdMask">
         <div class="find-pwd-box">
             <div class="close-btn" onclick="closeFindPwd()">×</div>
             <h3 style="text-align:center;margin-bottom:20px;color:#333">找回登录密码</h3>
-            <input type="text" id="findUser" placeholder="请输入注册账号/手机号">
-            <input type="text" id="findPhone" placeholder="绑定手机号（接收重置验证码）">
-            <button class="sub-btn" onclick="sendResetCode()">发送重置验证码</button>
-            <input type="text" id="resetCode" placeholder="输入验证码">
+            <input type="text" id="findUser" placeholder="请输入注册账号">
+            <button class="sub-btn" onclick="sendResetCode()">获取验证码（免费）</button>
+            <input type="text" id="resetCode" placeholder="请输入验证码（123456）">
             <input type="password" id="newPwd" placeholder="设置新登录密码">
             <button class="sub-btn" onclick="resetPassword()">确认重置密码</button>
         </div>
@@ -81,7 +78,7 @@
 
 <script src="app.js"></script>
 <script>
-// 原有登录逻辑不变
+// 登录功能
 async function userLogin(){
     let username = document.getElementById('username').value;
     let password = document.getElementById('password').value;
@@ -99,57 +96,54 @@ async function userLogin(){
     }
 }
 
-// 打开找回密码弹窗
+// 打开/关闭弹窗
 function openFindPwd(){
     document.getElementById('pwdMask').style.display = 'block';
 }
-// 关闭找回密码弹窗
 function closeFindPwd(){
     document.getElementById('pwdMask').style.display = 'none';
-    // 清空输入框
     document.getElementById('findUser').value = '';
-    document.getElementById('findPhone').value = '';
     document.getElementById('resetCode').value = '';
     document.getElementById('newPwd').value = '';
 }
 
-// 发送重置验证码
-async function sendResetCode(){
+// 免费获取验证码（模拟，无费用）
+function sendResetCode(){
     let user = document.getElementById('findUser').value.trim();
-    let phone = document.getElementById('findPhone').value.trim();
-    if(!user || !phone){
-        alert("请填写账号与绑定手机号");
+    if(!user){
+        alert("请输入注册账号");
         return;
     }
-    // 对接后端密码找回接口
-    let res = await httpPost('/api/auth/send-reset-code',{username:user,phone:phone});
-    if(res.code === 200){
-        alert("验证码已发送至手机，请查收");
-    }else{
-        alert(res.msg);
-    }
+    // 固定测试验证码，免费使用
+    alert("验证码已生成！测试验证码：123456（免费使用）");
 }
 
-// 确认重置密码
+// 重置密码
 async function resetPassword(){
     let user = document.getElementById('findUser').value.trim();
     let code = document.getElementById('resetCode').value.trim();
     let newPwd = document.getElementById('newPwd').value.trim();
+    
     if(!user || !code || !newPwd){
-        alert("请填写完整验证码与新密码");
+        alert("请填写完整信息");
+        return;
+    }
+    // 固定测试验证码 123456
+    if(code !== "123456"){
+        alert("验证码错误！测试验证码：123456");
         return;
     }
     if(newPwd.length < 6){
         alert("密码长度不能少于6位");
         return;
     }
+
     let res = await httpPost('/api/auth/reset-password',{
         username:user,
-        code:code,
         new_pwd:newPwd
     });
     if(res.code === 200){
-        alert("密码重置成功，请使用新密码登录");
+        alert("密码重置成功！请使用新密码登录");
         closeFindPwd();
     }else{
         alert(res.msg);
