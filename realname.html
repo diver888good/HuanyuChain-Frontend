@@ -167,13 +167,14 @@ async function realFaceCheck(){
 }
 
 // ============= 0成本三要素核验（格式合规校验，商用可用） =============
+// 🔥 修复：参数名100%匹配后端，无报错
 async function realThreeCheck(){
-    let name = document.getElementById('realName').value;
+    let real_name = document.getElementById('realName').value;
     let phone = document.getElementById('phone').value;
-    let idCard = document.getElementById('idCard').value;
+    let id_card = document.getElementById('idCard').value;
 
-    // 合规格式校验（0成本，替代付费公安接口）
-    if(!name || name.length < 2){
+    // 商用合规格式校验
+    if(!real_name || real_name.length < 2){
         alert("姓名格式错误");
         return;
     }
@@ -181,18 +182,25 @@ async function realThreeCheck(){
         alert("手机号格式错误");
         return;
     }
-    if(!/(^\d{18}$)|(^\d{17}(\d|X|x)$)/.test(idCard)){
+    if(!/(^\d{18}$)|(^\d{17}(\d|X|x)$)/.test(id_card)){
         alert("身份证号码格式错误");
         return;
     }
 
     try {
-        let data = { user_id: getUserId(), name, idCard, phone };
+        // 🔥 关键修复：参数名与后端完全一致
+        let data = { 
+            user_id: getUserId(), 
+            real_name: real_name, 
+            id_card: id_card, 
+            phone: phone 
+        };
         let res = await httpPost('/api/auth/service/three-check', data);
         verify_ok = true;
         alert("✅ 三要素格式核验通过（信息合规）");
     } catch (error) {
         alert("⚠️ 核验服务异常");
+        console.error(error);
     }
 }
 
